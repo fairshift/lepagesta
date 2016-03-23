@@ -1,0 +1,549 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <!--<link rel="stylesheet" href="css/foundation/6.2/foundation.css" />
+    <link rel="stylesheet" href="css/foundation/6.2/app.css" />-->
+    <link rel="stylesheet" href="css/foundation/5.5.2/foundation.css" />
+    <script src="js/foundation/5.5.2/vendor/modernizr.js"></script>
+    <link rel="stylesheet" href="fonts/foundation-icons/foundation-icons.css" />
+    <link rel="stylesheet" href="css/override.css" />
+    <link rel="stylesheet" href="css/stylesheet.css" />
+</head>
+<body>
+    <div id="header">
+
+    </div>
+    <div id="flow">
+
+	</div>
+	<div id="modal">
+
+	</div>
+
+	<!--http://stackoverflow.com/questions/8137672/mustache-js-and-singular-plural--> 
+
+    <script src="js/jquery/external/jquery/jquery.js"></script>
+	<script src="js/jquery/jquery.cookie.js"></script>
+	<script src="js/jquery/jquery.validate.min.js"></script>
+
+    <!--<script src="js/foundation/6.2/what-input.min.js"></script>
+    <script src="js/foundation/6.2/foundation.min.js"></script>
+    <script src="js/foundation/6.2/app.js"></script>-->
+
+    <script src="js/foundation/5.5.2/foundation.min.js"></script>
+    <script src="js/foundation/5.5.2/foundation/foundation.topbar.js"></script>
+
+    <script src="js/handlebars/handlebars-v4.0.5.js"></script>
+    <script src="js/mustache.js"></script>
+
+	<script type="text/javascript">
+	//Foundation 5.5.2
+	 	$(document).foundation();
+
+	//Data objects
+	    var user;
+
+	//Authentication
+      	var auth = 0;
+		var urlAuth = getUrlParameter('auth'); //social login
+      	if(typeof auth !== 'undefined'){
+        	if(auth.length != 32){
+          		auth = 0;
+        	}
+      	} else {
+        	auth = 0;
+      	}
+		if(typeof urlAuth !== 'undefined'){
+			if(urlAuth.length == '32'){
+				auth = urlAuth;
+				console.log()
+				authenticate();
+			}
+		}
+		if(auth == 0){
+			auth = $.cookie("auth");
+			if(typeof auth === 'undefined' || auth.length != 32){
+        		auth = 0;
+			}
+        	authenticate();
+      	}
+
+    //Language
+		var language = $.cookie("language"); //default
+		var siteText;
+      	if(typeof language !== 'undefined' || (typeof user !== 'undefined' && typeof user['language'] != 'undefined')){
+      	} else {
+        	language = 'en';
+		    $.cookie("language", language, { expires : 365 });
+      	}
+
+    //Authenticate user, get user data & site language
+	    function authenticate(){
+	      	$.get("http://fairshift.org/api/main.php?auth="+auth, function(data){
+		        if(typeof data !== 'undefined'){
+		        	if(data.length > 0){
+		        		data = $.parseJSON(data);
+			            user = data['user'];
+			            auth = user['auth'];
+			            //language
+	      				$.get("http://fairshift.org/api/main.php?f=siteText&code="+language+"&auth="+auth, function(dataText){
+	      					if(typeof dataText !== 'undefined'){
+	      						if(dataText.length > 0){
+	      							siteText = $.parseJSON(dataText);
+
+						            if(user['confirmed'] > 0){
+						            	passport(data);
+						            } else {
+						            	landing();
+						            }
+	      						}
+	      					}
+	      				});
+		        	}
+		        } else {
+					landing();
+		        }
+	     	});
+	    }
+
+    //Confirmation code
+		if(typeof getUrlParameter('code') !== 'undefined'){
+			if(getUrlParameter('code').length == '32'){
+				passportStatus = 'confirm';
+				
+				$.get("http://fairshift.org/api/main.php?f=confirm&code="+getUrlParameter('code')+"&auth="+auth, function(data){
+
+			        if(typeof data !== 'undefined'){
+			        	if(data.length > 0){
+							data = $.parseJSON(data);
+							if(data['status'] == 'welcome'){
+								passport(data);
+							}
+						}
+					}
+
+				});
+			}
+		}
+
+		var passportStatus = 0;
+		var passportForm = "#form-enter";
+		function enter(){
+	      	$.get("http://fairshift.org/api/main.php?f=passport&auth="+auth, $( passportForm ).serialize(), function(data){
+		        data = $.parseJSON(data);
+		        console.log(data);
+		        passportStatus = data['status'];
+		        if(typeof passportStatus !== 'undefined'){
+
+		          if(passportStatus == 'register'){
+		          	registerPerson();
+		          }
+		          if(passportStatus == 'confirm'){
+		          	confirmPerson();
+		          }
+		          if(passportStatus == 'signin'){
+		          	signinPerson();
+		          }
+		          if(passportStatus == 'welcome'){
+		          	passport(data);
+		          }
+
+		        } else {
+		          //well, something's not working...
+		        }
+
+	      	});
+		};
+      	function landing(){
+			if(typeof getUrlParameter('code') !== 'undefined'){
+				if(getUrlParameter('code').length == '32'){
+					passportStatus = 'confirm';
+						$.get("http://fairshift.org/api/main.php?f=confirm&code="+getUrlParameter('code')+"&auth="+auth, function(data){
+				        if(typeof data !== 'undefined'){
+				        	if(data.length > 0){
+									data = $.parseJSON(data);
+									if(data['status'] == 'welcome'){
+										passport(data);
+									}
+								}
+							}
+						});
+				}
+			} else {
+
+				$.get( "tpl/header/not-logged-in.html", function( data ) {
+			    	$("#header").html(Mustache.render(data, siteText));
+				});
+
+				$.get( "tpl/passport/landing.html", function( data ) {
+			    	$.when(
+			    		$("#flow").html(Mustache.render(data, siteText)),
+			    		$.Deferred(function( deferred ){
+						        $( deferred.resolve );
+						    })
+						).done(function(){
+				            if(typeof user['email'] !== 'undefined' && user['email'] == null){
+				 				/*$("#enter-title").html(translate('enter_title'));
+				 				$("#enter-email").attr("placeholder", translate('enter_title_input'));
+				 				$("#enter-continue").attr("value", translate('enter_continue'));*/
+
+								// validate signup form on keyup and submit
+								var validator = $("#form-enter").validate({
+									onkeyup: false,
+									rules: {
+										email: {
+											required: true,
+											email: true
+										}
+									},
+									messages: {
+										firstname: siteText['email_input_invalid']
+									},
+									// the errorPlacement has to take the table layout into account
+									errorPlacement: function(error, element) {
+										if (element.is(":radio"))
+											error.appendTo(element.next());
+										else if (element.is(":checkbox"))
+											error.appendTo(element.next());
+										else
+											error.appendTo(element.next());
+									},
+									// specifying a submitHandler prevents the default submit, good for the demo
+									submitHandler: function() {
+										enter();
+									},
+									// set this class to error-labels to indicate valid fields
+									success: function(label) {
+										// set &nbsp; as text for IE
+										//label.html("&nbsp;").addClass("checked");
+									},
+									highlight: function(element, errorClass) {
+										$(element).next().find("." + errorClass).removeClass("checked");
+									}
+								});
+
+								$(".loginFacebook").click(function(){
+							      	$.get("http://fairshift.org/api/main.php?f=loginFacebook&auth="+auth, function(data){
+							      		data = $.parseJSON(data);
+							      		if(typeof data['user'] !== 'undefined' && data['user'] != null){
+							      			auth = data['user']['auth'];
+							      			user = data['user'];
+							      		} else {
+							      			console.log(data['login_url']);
+							      			window.location.href = decodeURIComponent(data['login_url']);
+							      		}
+							      	});
+								});
+								$(".loginTwitter").click(function(){
+							      	$.get("http://fairshift.org/api/main.php?f=loginTwitter&auth="+auth, function(data){
+							      		data = $.parseJSON(data);
+							      		if(parseInt(data['status_code']) == 200){
+							      			window.location.href = data['login_url'];
+							      		}
+							      	});
+								});
+
+							}
+						});
+				});
+
+			}
+
+		}
+
+		function translate(field, replaceArray){
+        	replaceArray = typeof replaceArray !== 'undefined' ? replaceArray : '0';
+
+        	var string = siteText[field];
+        	if(replaceArray != 0){
+          		$.each(replaceArray, function( index, element ) {
+          			string = string.replace("%"+index+"%", element);
+          		});
+        	}
+        	return string;
+
+        	//$(this).attr("placeholder", "Type your answer here");
+        	//placeholder change
+        	//idea: bind translation to id, class & tag attribute to simplify
+        	//frontend or backend merging of shape and content? UX & efficiency
+		}
+
+		function registerPerson(){
+			var email = $(".t-enter_email_input").val();
+			var validatedOnce = false;
+			$.get( "tpl/passport/register.html", function( data ) {
+		    	$.when(
+		    		$("#flow").html(Mustache.render(data, siteText)),
+		    		$.Deferred(function( deferred ){
+					        $( deferred.resolve );
+					    })
+					).done(function(){
+						passportForm = "#form-register";
+
+						$("#register-email").val(email);
+
+						$(".t-enter_title_register").html(translate('enter_title_register', {"email": email}));
+
+						registerSubmit();
+
+						$(".t-enter_register_username_input").keyup(function(){
+							if($(".t-enter_register_username_input").val().length >= 3){
+								$.get("http://fairshift.org/api/main.php?f=checkUsername&username="+encodeURIComponent($(".t-enter_register_username_input").val())+"&auth="+auth, function(data){
+									data = $.parseJSON(data);
+									status = data['status'];
+									if(status == 'available'){
+										$(".t-enter_register_username_invalid").html(translate('enter_register_username_available', {'username': $(".t-enter_register_username_input").val()}));
+										$(".t-enter_register_username_invalid").addClass("success");
+										$(".t-enter_register_username-invalid").removeClass("error");
+									} else {
+										$(".t-enter_register_username_invalid").html(translate('enter_register_username_taken', {'username': $(".t-enter_register_username_input").val()}));
+										$(".t-enter_register_username_invalid").addClass("error");
+										$(".t-enter_register_username_invalid").removeClass("success");
+									}
+								});
+							}
+						});
+						// validate signup form on keyup and submit
+						var validator1 = $("#form-register").validate({
+							onkeyup: function(element) {$(element).valid()},
+							rules: {
+								password: {
+									required: true,
+									minlength: 6
+								},
+								password_confirm: {
+									required: true,
+									equalTo: ".t-register_password"
+								},
+								username: {
+									required: true,
+									minlength: 3
+								}
+							},
+							messages: {
+								username: siteText['input_tooshort'],
+								password: siteText['input_tooshort'],
+								password_confirm: siteText['input_password_nomatch']
+							},
+							// the errorPlacement has to take the table layout into account
+							errorPlacement: function(error, element) {
+								if($(element).prop("tagName") == 'INPUT'){
+										error.appendTo(element.next().next());
+									} else {
+									if (element.is(":radio"))
+										error.appendTo(element.next());
+									else if (element.is(":checkbox"))
+										error.appendTo(element.next());
+									else
+										error.appendTo(element.next());
+								}
+							},
+							// specifying a submitHandler prevents the default submit, good for the demo
+							submitHandler: function() {
+								alert("lol");
+								enter();
+							},
+							// set this class to error-labels to indicate valid fields
+							success: function(label) {
+								// set &nbsp; as text for IE
+								//label.html("&nbsp;").addClass("checked");
+							},
+							highlight: function(element, errorClass) {
+								$(element).next().find("." + errorClass).removeClass("checked");
+							}
+						});
+				});
+			});
+		}
+		function registerSubmit(){
+	 		$(".t-enter_continue_register").click(function(){
+	 			alert($(".t-enter_register_username_input").val().length > 3);
+	 			alert($(".t-enter_register_username_invalid").hasClass("success"));
+	 			alert($(".t-enter_register_password_input").val().length > 6);
+	 			alert($(".t-enter_register_password_input").val() == $(".t-enter_register_confirm_input").val());
+	 			if($(".t-enter_register_username_invalid").hasClass("success") && $(".t-enter_register_password_input").val().length > 6 
+	 				&& $(".t-enter_register_password_input").val() == $(".t-enter_register_confirm_input").val()){
+	 				console.log("yes");
+				      	$.get("http://fairshift.org/api/main.php?f=passport&auth="+auth, $( passportForm ).serialize(), function(data){
+					        data = $.parseJSON(data);
+					        console.log(data);
+					        passportStatus = data['status'];
+					        if(typeof passportStatus !== 'undefined'){
+
+					          if(passportStatus == 'register'){
+					          	registerPerson();
+					          }
+					          if(passportStatus == 'confirm'){
+					          	confirmPerson();
+					          }
+
+					        } else {
+					          //well, something's not working...
+					        }
+
+				      	});
+				}
+			});
+		}
+		function confirmPerson(){
+			var email = $(".t-enter_email_input").val();
+			console.log(email);
+			$.get( "tpl/passport/confirm.html", function( data ) {
+		    	$.when(
+		    		$("#flow").html(Mustache.render(data, siteText)),
+		    		$.Deferred(function( deferred ){
+					        $( deferred.resolve );
+					    })
+					).done(function(){
+						$(".t-enter_title_confirm").html(translate('enter_title_confirm', {"email": email}));
+			     		$(".t-confirm_send_again").click(function(){
+							$.get("http://fairshift.org/api/main.php?f=resendConfirmation&email="+email+"&auth="+auth, function(data){
+								$(".t-confirm_send_again").attr("disabled", "true");
+				     		});
+						});
+					});
+			});
+		}
+		function signinPerson(){
+
+			var email = $(".t-enter_email_input").val();
+
+			$.get( "tpl/passport/signin.html", function( data ) {
+		    	$.when(
+		    		$("#flow").html(Mustache.render(data, siteText)),
+		    		$.Deferred(function( deferred ){
+					        $( deferred.resolve );
+					    })
+					).done(function(){
+
+						$(".t-signin_title").html(translate('enter_title_signin', {'email': email}));
+						$(".t-enter_email_input").val(email);
+			     		$(".t-signin_password").focus();
+
+			     		passportForm = "#form-signin";
+
+						// validate signup form on keyup and submit
+						var validator = $("#form-signin").validate({
+							onkeyup: function(element) {$(element).valid()},
+							rules: {
+								password: {
+									required: true,
+									minlength: 6
+								}
+							},
+							messages: {
+								password: translate('input_tooshort')
+							},
+							// the errorPlacement has to take the table layout into account
+							errorPlacement: function(error, element) {
+								if($(element).hasClass('t-enter_register_password')){
+										error.appendTo(element.next().next());
+									} else {
+									if (element.is(":radio"))
+										error.appendTo(element.next());
+									else if (element.is(":checkbox"))
+										error.appendTo(element.next());
+									else
+										error.appendTo(element.next());
+								}
+							},
+							// specifying a submitHandler prevents the default submit, good for the demo
+							submitHandler: function() {
+			     				$(".t-signin_continue").attr("disabled", 'true');
+								enter();
+							},
+							// set this class to error-labels to indicate valid fields
+							success: function(label) {
+								// set &nbsp; as text for IE
+								//label.html("&nbsp;").addClass("checked");
+							},
+							highlight: function(element, errorClass) {
+								$(element).next().find("." + errorClass).removeClass("checked");
+							}
+						});
+					});
+			});
+		}
+
+	//when user is logged in
+		function passport(data){
+			//set person's profile and load page
+			$.get( "tpl/passport/profile-organization.html", function( data ) {
+		    	$("#flow").html(Mustache.render(data, siteText));
+			});
+			auth = data['user']['auth'];
+			user = data['user'];
+		    $.cookie("auth", auth, { expires : 30 });
+
+		    //$("#header").html(getTemplate("header/logged-in", siteText));
+		    //console.log(siteText);
+
+			$.get( "tpl/header/logged-in.html", function( data ) {
+		    	$.when(
+		    		$("#header").html(Mustache.render(data, siteText)),
+		    		$.Deferred(function( deferred ){
+					        $( deferred.resolve );
+					    })
+					).done(function(){
+						$.get( "tpl/header/spoken-languages.html", function( data ) {
+					    	$("#spoken_languages").html(Mustache.render(data, siteText));
+						});
+					});
+			});
+
+			//$.when(
+				
+			    /*$.getScript( "js/jquery/jquery-ui.js" ),
+			    $.getScript( "js/nouislider/nouislider.min.js" ),
+			    $.getScript( "tpl/fairshift/slider.js" ),
+			    $('<link rel="stylesheet" type="text/css" href="js/jquery/jquery-ui.css">').appendTo("head"),
+			    $('<link rel="stylesheet" type="text/css" href="js/nouislider/nouislider.min.css">').appendTo("head"),*/
+			    $.getScript( "js/jquery/jquery-ui.js" ),
+			    /*$.getScript( "js/jquery/jquery-ui.js" ),
+			    $.Deferred(function( deferred ){
+			        $( deferred.resolve );
+			    })
+			).done(function(this){
+
+			    //place your code here, the scripts are all loaded
+
+			});
+		    $("#reflection-section").show();
+		    setupreflections();
+		    loadSlider();*/
+		    alert("okay");
+		}
+
+		$("#profile-open").click(function(){
+			$("#profile-section").show();
+		    $("#reflection-section").hide();
+		});
+
+		function isValidEmailAddress(emailAddress) {
+		    var pattern = /^([a-z\d!#$%&'*+\-\/=?^_`{|}~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+(\.[a-z\d!#$%&'*+\-\/=?^_`{|}~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+)*|"((([ \t]*\r\n)?[ \t]+)?([\x01-\x08\x0b\x0c\x0e-\x1f\x7f\x21\x23-\x5b\x5d-\x7e\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|\\[\x01-\x09\x0b\x0c\x0d-\x7f\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))*(([ \t]*\r\n)?[ \t]+)?")@(([a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|[a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF][a-z\d\-._~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]*[a-z\d\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])\.)+([a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]|[a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF][a-z\d\-._~\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]*[a-z\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])\.?$/i;
+		    return pattern.test(emailAddress);
+		};
+
+		function getUrlParameter(sParam) {
+		    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+		        sURLVariables = sPageURL.split('&'),
+		        sParameterName,
+		        i;
+
+		    for (i = 0; i < sURLVariables.length; i++) {
+		        sParameterName = sURLVariables[i].split('=');
+
+		        if (sParameterName[0] === sParam) {
+		            return sParameterName[1] === undefined ? true : sParameterName[1];
+		        }
+		    }
+		};
+
+		/*Template engine - Handlebars / Mustache*/
+	</script>
+</body>
+</html>
