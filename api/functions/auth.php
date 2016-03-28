@@ -1,13 +1,17 @@
 <?php
-  //Automatic authentication & registration of anonymous account with every visit
+
+//Automatic authentication & registration of anonymous account with every visit
   function authenticate($db){
+
     $GLOBALS['newUser'] = false; //in case authentication code doesn't match, this triggers a new anonymous account (valid until cookie is available)
     $user_id = 0;
+
     if(input( 'auth', 'md5', '32', '32' ) != 0){
 
       $row = getUser($db, $_REQUEST['auth'], 'auth', array('me'));
+
       if(isset($row['id'])){
-        $user_id = $row['id'];
+
         if($row['email_confirmation_time'] > 0 
           || $row['facebook_user_id'] > 0 
           || $row['twitter_user_id'] > 0
@@ -16,40 +20,45 @@
         } else {
           $row['confirmed'] = false;
         }
-        if(!isset($_GET['f'])){
-          $response['user'] = $row;
-        }
-        $user = $row;
 
+        $user = $row;
         mysqli_query($db, "UPDATE user SET last_visit = '".time()."' WHERE auth = '{$_REQUEST['auth']}'");
+
       } else {
-        $GLOBALS['newUser'] = true;
+        $GLOBALS['newUser'] = true; //?
       }
     }
 
     if((!input( 'auth', 'md5', '32', '32' ) || $GLOBALS['newUser'] == true)){
-      $auth = md5("LOL%I=ISUP".microtime());
 
+      $auth = md5("LOL%I=ISUP".microtime());
       mysqli_query($db, "INSERT INTO user (auth, last_visit) VALUES (".
                   "'$auth', ".
                   "'".time()."');" );
 
       $row = getUser($db, $auth, 'auth', array('me'));
+
+      mysqli_query($db, "INSERT INTO user_sphere (user_id, sphere_id) VALUES (".
+                  "'$auth', ".
+                  "'".time()."');" );
+
       if(isset($row['id'])){
-        $user_id = $row['id'];
         $user = $row;
       }
     }
+
     return $user;
   }
 
-  //sign in / register function
+//Sign in / Register function
   function passThrough($db, $user_id){
+
     $continue = emailStatus($db, $user_id);
 
     if($continue == 'register'){
       $register = registerPerson($db);
     }
+
     if($continue == 'signin'){
       $user = signinPerson($db, $user_id);
     }
@@ -65,8 +74,11 @@
   }
 
   function emailStatus($db, $user_id){
+
     if($user_id > 0 && filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL) == urldecode($_REQUEST['email'])){
+
       $row = getUser($db, urldecode($_REQUEST['email']), 'email', array('me'));
+
       if($row['id'] && strlen($row['password']) == 32 && $row['email_confirmation_time'] > 0){
          return "signin";
       } elseif($row['id'] && strlen($row['password']) == 32 && $row['email_confirmation_time'] == 0){
@@ -88,6 +100,7 @@
       } else {
         $response['status'] = "available";
       }
+
       return $response;
     }
   }
@@ -101,6 +114,7 @@
       && input('username', 'string', '3', '32')
       && getUser($db, urldecode($_REQUEST['username']), 'username', array('me')) == 0
     ){
+
       $email_confirmation_code = md5("LOL%I=ISUP".microtime());
       $sql = "INSERT INTO user (username, password, email, time_registered, email_confirmation_code, email_confirmation_time, last_visit) VALUES (".
                   "'".urldecode($_REQUEST['username'])."', ".
@@ -119,6 +133,7 @@
   }
 
   function confirmEmail($db, $user_id){
+
     if($user_id > 0 && input('code', 'string', '32', '32')){
       $user = getUser($db, $_REQUEST['code'], 'email_confirmation_code', array('me'));
       if($user){
@@ -135,16 +150,19 @@
   }
 
   function resendConfirmation($db, $user_id){
-    $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('me'));
-    if($user['email_confirmation_code'] > 0 && $user['email_confirmation_time'] == 0){
 
+    $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('me'));
+
+    if($user['email_confirmation_code'] > 0 && $user['email_confirmation_time'] == 0){
       mailer($_REQUEST['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'username' => $user['username']), 'confirmation');
       return true;
     }
   }
 
   function signinPerson($db, $user_id){
+
     $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('me'));
+
     if($user_id > 0 && $user['id'] > 0 && md5($_REQUEST['password']) == $user['password']){
       $auth = md5("LOL%I=ISUP".microtime());
       $sql = "UPDATE user SET auth = '{$auth}' WHERE id = {$user['id']}";
@@ -158,10 +176,12 @@
     }
   }
 
-  //data created anonymously gets merged with this function
+//Account created anonymously gets merged into a registered account with this function
   function mergeAccounts($db, $merging_user_id, $user_id){
+
     if($merging_user_id != $user_id){
       $result = mysqli_query($db, "SELECT id, email_confirmed FROM user WHERE id = '$user_id'");
+
       if($row = mysqli_fetch_array($result) && $row['email_confirmed'] > 0){
 
         //auth code, last visit, email_confirmation, confirmation code
@@ -175,11 +195,15 @@
         $row = mysqli_fetch_array($db, $result);
 
         return safeProfileData($row);
-
       }
     }
 
     return $response;
   }
 
+//Get user privileges for a specific data block
+  function userPrivileges($db, $user_id, $table, $entry_id){
+
+    
+  }
 ?>

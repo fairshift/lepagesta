@@ -1,8 +1,8 @@
 <?php
-
   function getUser($db, $id, $selector, $preset){
+
     if(in_array("public", $preset)){
-      $select = "id, username, email, email_confirmation_time, time_registered, last_visit";
+      $select = "id, username, email, time_registered, last_visit, email_confirmation_time, facebook_user_id, twitter_user_id";
     } elseif(in_array("me", $preset)){
       $select = "id, auth, password, username, email, email_confirmation_code, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id";
     }
@@ -24,10 +24,7 @@
    	}
 
     $sql = "SELECT $select FROM user WHERE $where";
-    
-    ///if($selector == 'username'){echo $sql;}
-	//echo $sql;
-
+ 
     $result = mysqli_query($db, $sql);
     if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
       return $row;
@@ -35,5 +32,4 @@
       return 0;
     }
   }
-
- ?>
+?>
