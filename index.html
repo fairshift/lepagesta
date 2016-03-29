@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fairshift.org</title>
+    <title>Fairshift</title>
 
     <!--<link rel="stylesheet" href="css/foundation/6.2/foundation.css" />
     <link rel="stylesheet" href="css/foundation/6.2/app.css" />-->
@@ -53,6 +53,7 @@
 	//Data objects
 	    var user;
 	    var domain = window.location.hostname;
+	    var api = "localhost/fairshift/lepagesta";
 
 	//Authentication
       	var auth = 0;
@@ -84,7 +85,7 @@
 
     //Authenticate user, get user data & site language
 	    function authenticate(){
-	      	$.get("http://fairshift.org/api/main.php?o="+domain+"&auth="+auth, function(data){
+	      	$.get("http://"+api+"/api/main.php?o="+domain+"&auth="+auth, function(data){
 
 		        if(typeof data !== 'undefined'){
 		        	if(data.length > 0){
@@ -94,7 +95,7 @@
 						$.cookie("auth", auth, { expires : 365 });
 
 			            //language
-	      				$.get("http://fairshift.org/api/main.php?o="+domain+"&call=siteText&code="+language+"&auth="+auth, function(dataText){
+	      				$.get("http://"+api+"/api/main.php?o="+domain+"&call=siteText&code="+language+"&auth="+auth, function(dataText){
 
 	      					if(typeof dataText !== 'undefined'){
 	      						if(dataText.length > 0){
@@ -121,7 +122,7 @@
 			if(getUrlParameter('code').length == '32'){
 
 				passportStatus = 'confirm';
-				$.get("http://fairshift.org/api/main.php?o="+domain+"&call=confirm&code="+getUrlParameter('code')+"&auth="+auth, function(data){
+				$.get("http://"+api+"/api/main.php?o="+domain+"&call=confirm&code="+getUrlParameter('code')+"&auth="+auth, function(data){
 
 			        if(typeof data !== 'undefined'){
 			        	if(data.length > 0){
@@ -140,7 +141,7 @@
 		var passportStatus = 0;
 		var passportForm = "#form-enter";
 		function enter(){
-	      	$.get("http://fairshift.org/api/main.php?o="+domain+"&call=passport&auth="+auth, $( passportForm ).serialize(), function(data){
+	      	$.get("http://"+api+"/api/main.php?o="+domain+"&call=passport&auth="+auth, $( passportForm ).serialize(), function(data){
 
 		        data = $.parseJSON(data);
 		        console.log(data);
@@ -171,7 +172,7 @@
 				if(getUrlParameter('code').length == '32'){
 
 					passportStatus = 'confirm';
-					$.get("http://fairshift.org/api/main.php?o="+domain+"&call=confirm&code="+getUrlParameter('code')+"&auth="+auth, function(data){
+					$.get("http://"+api+"/api/main.php?o="+domain+"&call=confirm&code="+getUrlParameter('code')+"&auth="+auth, function(data){
 
 				        if(typeof data !== 'undefined'){
 				        	if(data.length > 0){
@@ -237,7 +238,7 @@
 								});
 
 								$(".loginFacebook").click(function(){
-							      	$.get("http://fairshift.org/api/main.php?o="+domain+"&call=loginFacebook&auth="+auth, function(data){
+							      	$.get("http://"+api+"/api/main.php?o="+domain+"&call=loginFacebook&auth="+auth, function(data){
 							      		
 							      		data = $.parseJSON(data);
 							      		if(typeof data['user'] !== 'undefined' && data['user'] != null){
@@ -250,7 +251,7 @@
 							      	});
 								});
 								$(".loginTwitter").click(function(){
-							      	$.get("http://fairshift.org/api/main.php?o="+domain+"&call=loginTwitter&auth="+auth, function(data){
+							      	$.get("http://"+api+"/api/main.php?o="+domain+"&call=loginTwitter&auth="+auth, function(data){
 
 							      		data = $.parseJSON(data);
 							      		if(parseInt(data['status_code']) == 200){
@@ -304,7 +305,7 @@
 						$(".t-enter_register_username_input").keyup(function(){
 							if($(".t-enter_register_username_input").val().length >= 3){
 
-								$.get("http://fairshift.org/api/main.php?o="+domain+"&call=checkUsername&username="+encodeURIComponent($(".t-enter_register_username_input").val())+"&auth="+auth, function(data){
+								$.get("http://"+api+"/api/main.php?o="+domain+"&call=checkUsername&username="+encodeURIComponent($(".t-enter_register_username_input").val())+"&auth="+auth, function(data){
 
 									data = $.parseJSON(data);
 									status = data['status'];
@@ -384,7 +385,7 @@
 	 			if($(".t-enter_register_username_invalid").hasClass("success") && $(".t-enter_register_password_input").val().length > 6 
 	 				&& $(".t-enter_register_password_input").val() == $(".t-enter_register_confirm_input").val()){
 
-			      	$.get("http://fairshift.org/api/main.php?o="+domain+"&call=passport&auth="+auth, $( passportForm ).serialize(), function(data){
+			      	$.get("http://"+api+"/api/main.php?o="+domain+"&call=passport&auth="+auth, $( passportForm ).serialize(), function(data){
 
 				        data = $.parseJSON(data);
 				        console.log(data);
@@ -420,7 +421,7 @@
 
 					$(".t-enter_title_confirm").html(translate('enter_title_confirm', {"email": email}));
 		     		$(".t-confirm_send_again").click(function(){
-						$.get("http://fairshift.org/api/main.php?o="+domain+"&call=resendConfirmation&email="+email+"&auth="+auth, function(data){
+						$.get("http://"+api+"/api/main.php?o="+domain+"&call=resendConfirmation&email="+email+"&auth="+auth, function(data){
 							$(".t-confirm_send_again").attr("disabled", "true");
 			     		});
 					});

@@ -1,7 +1,7 @@
 <?php
   function getUser($db, $id, $selector, $preset){
 
-    if(in_array("public", $preset)){
+    if(in_array("auth", $preset)){
       $select = "id, username, email, time_registered, last_visit, email_confirmation_time, facebook_user_id, twitter_user_id";
     } elseif(in_array("me", $preset)){
       $select = "id, auth, password, username, email, email_confirmation_code, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id";
@@ -31,5 +31,12 @@
     } else {
       return 0;
     }
+  }
+
+  function getUserProfile($db, $user){
+    //circles
+    //gestures
+      //reflections
+    //
   }
 ?>

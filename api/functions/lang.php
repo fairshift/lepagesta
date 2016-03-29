@@ -21,12 +21,12 @@
 
       if(input('code', 'string', '1', '10') && $user_id > 0){
 
-        $sql =  "SELECT sphere_site_language.field, sphere_site_language.content FROM sphere_site_language ".
+        $sql =  "SELECT site_language.field, site_language.content FROM site_language ".
                 "INNER JOIN ( ".
                     "SELECT field, MAX(time) time ".
-                    "FROM sphere_site_language ".
+                    "FROM site_language ".
                     "GROUP BY field ".
-                ") buffer ON sphere_site_language.field = buffer.field AND sphere_site_language.time = buffer.time";
+                ") buffer ON site_language.field = buffer.field AND site_language.time = buffer.time";
         $result = mysqli_query($db, $sql);
 
         while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
@@ -37,7 +37,7 @@
       }
     }
 
-  include("Google/translate/TranslateClient.php");
+  include("vendor/Google/translate/TranslateClient.php");
     function translate($input, $from, $to){
       $google = new TranslateClient(); // Default is from 'auto' to 'en'
       $google->setSource($from); // Translate from English

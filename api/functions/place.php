@@ -1,5 +1,5 @@
 <?php
-  function mapPlace($db, $user, $place, $portal, $circle, $language_id = $GLOBALS['language_id']){
+  function nearbyPlaces($db, $user, $place, $language_id = $GLOBALS['language_id']){
 
     if($place['id']){
       if($row = getContent($db, $user['id'], $language_id, 'place', $place_id)){
@@ -33,11 +33,13 @@
         }
       }
     }
+  }
 
-    //Add new place
+  //Add new / update place
+  function mapPlace($db, $user, $place, $language_id = $GLOBALS['language_id']){
     if(!$place['id']){
       if($place['title'] && $place['lat'] && $place['lng'] && $place['address']){
-        $row = addContent($db, $user_id, $GLOBALS['language_id'], 'place', 'new', $content);
+        $row = addContent($db, $user_id, $GLOBALS['language_id'], 'place', 'new', $place);
         return $row['status_code'] = 200;
       } else {
         $row = $place;
@@ -45,6 +47,7 @@
       }
     } else {
       //A place is established
+      $row = getContent($db, $user['id'], $language_id, 'place', $place_id))
       return $row['status_code'] = 200;
     }
   }

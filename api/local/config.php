@@ -1,6 +1,6 @@
 <?php
 	$account['database-host'] = "localhost";
-	$account['database-user'] = "ownprodu_lepa";
-	$account['database-password'] = "openMinded1";
-	$account['database'] = "ownprodu_fairshift";
+	$account['database-user'] = "fairshift";
+	$account['database-password'] = "geslo";
+	$account['database'] = "fairshift";
 ?>

@@ -8,7 +8,7 @@
 
     if(input( 'auth', 'md5', '32', '32' ) != 0){
 
-      $row = getUser($db, $_REQUEST['auth'], 'auth', array('me'));
+      $row = getUser($db, $_REQUEST['auth'], 'auth', array('auth'));
 
       if(isset($row['id'])){
 
@@ -36,7 +36,7 @@
                   "'$auth', ".
                   "'".time()."');" );
 
-      $row = getUser($db, $auth, 'auth', array('me'));
+      $row = getUser($db, $auth, 'auth', array('auth'));
 
       mysqli_query($db, "INSERT INTO user_sphere (user_id, sphere_id) VALUES (".
                   "'$auth', ".
@@ -77,7 +77,7 @@
 
     if($user_id > 0 && filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL) == urldecode($_REQUEST['email'])){
 
-      $row = getUser($db, urldecode($_REQUEST['email']), 'email', array('me'));
+      $row = getUser($db, urldecode($_REQUEST['email']), 'email', array('auth'));
 
       if($row['id'] && strlen($row['password']) == 32 && $row['email_confirmation_time'] > 0){
          return "signin";
@@ -94,7 +94,7 @@
   function usernameExists($db, $user_id){
     if($user_id > 0 && input('username', 'string', '3')){
 
-      $row = getUser($db, urldecode($_REQUEST['username']), 'username', array('public'));
+      $row = getUser($db, urldecode($_REQUEST['username']), 'username', array('auth'));
       if($row['id'] > 0){
         $response['status'] = "exists";
       } else {
@@ -107,12 +107,12 @@
 
   function registerPerson($db){
 
-    if(getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('me')) == 0 
+    if(getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('auth')) == 0 
       && input('password', 'string', '6', '32') 
       && input('password_confirm', 'string', '6', '32') 
       && $_REQUEST['password'] == $_REQUEST['password_confirm'] 
       && input('username', 'string', '3', '32')
-      && getUser($db, urldecode($_REQUEST['username']), 'username', array('me')) == 0
+      && getUser($db, urldecode($_REQUEST['username']), 'username', array('auth')) == 0
     ){
 
       $email_confirmation_code = md5("LOL%I=ISUP".microtime());
@@ -135,7 +135,7 @@
   function confirmEmail($db, $user_id){
 
     if($user_id > 0 && input('code', 'string', '32', '32')){
-      $user = getUser($db, $_REQUEST['code'], 'email_confirmation_code', array('me'));
+      $user = getUser($db, $_REQUEST['code'], 'email_confirmation_code', array('auth'));
       if($user){
         $sql = "UPDATE user SET email_confirmation_time = '".time()."' WHERE id = {$user['id']}";
         mysqli_query($db, $sql);
