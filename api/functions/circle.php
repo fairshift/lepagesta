@@ -13,7 +13,7 @@
 		c) s/he clicked on it in a circle
   */
 
- 	function getCirclesBy($db, $by, $privileges_user_id = false, $parent_cache = false){
+ 	function getCirclesBy($db, $by, $get_privileges_only = false, $parent_cache = false){
 
 		$user_id = $GLOBALS['user_id'];
 
@@ -71,7 +71,7 @@
 		      	while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
 		      		//get circle info, commoners, privileges & translations
-					if($circle = getCircle($db, $row['circle_id'], $privileges_user_id, true)){
+					if($circle = getCircle($db, $row['circle_id'], $by['user_id'], true)){
 				    	$cache['dataview'] = array_merge($cache['dataview'], $circle['cache']['dataview']);
 				    	unset($circle['cache']);
 				    	$response[$circle['circle_id']] = $circle;
@@ -94,7 +94,7 @@
 	    }
   	}
 
-	function getCircle($db, $circle_id, $privileges_user_id = false, $parent_cache = false){
+	function getCircle($db, $circle_id, $check_privileges_user_id = false, $parent_cache = false){
 
 		$user_id = $GLOBALS['user_id'];
 
@@ -118,7 +118,7 @@
 		    	if($response['circle_id']){
 			    	//Commoners
 			    	if($privileges_user_id){
-				    	$response['commoners'] = getCommoners($db, $circle_id, $privileges_user_id, true);
+				    	$response['commoners'] = getCommoners($db, $circle_id, $check_privileges_user_id, true);
 			    	} else {
 				    	$response['commoners'] = getCommoners($db, $circle_id, false, true);
 
@@ -138,7 +138,7 @@
 		}
 	}
 
-	function getCommoners($db, $circle_id, $privileges_user_id = false, $parent_cache = false){
+	function getCommoners($db, $circle_id, $check_privileges_user_id = false, $parent_cache = false){
 
 		if($user_id && $circle_id){
 
@@ -153,7 +153,7 @@
 				if($privileges_user_id == false){
 					$sql.= "ORDER BY time_confirmed DESC";
 				} else {
-					$sql.= "AND user_id = '{$privileges_user_id}'";
+					$sql.= "AND user_id = '{$check_privileges_user_id}'";
 				}
 
 			    $result = mysqli_query($db, $sql);
@@ -178,15 +178,17 @@
 	}
 
 	function maxPrivilegesUser($db, $content_circles, $commoner_circles){
-		//[firestarter - an influence sent through vibes of a song at a moment ()] - a sunny way to update database structure
-		//waiting for the next line to introduce changes (try ethereum?) - 
-		//with code it is to define how many Capitalized characters could be used to gamify coding (or typing) with telepathic gesture entanglement meteors.
+		//[firestarter - an influence sent through vibes of a song at a moment ()] - a sunny way to comment the API and perhaps, update database structure
+		//waiting for the next line to introduce changes - (try ethereum?) - 
+		//Capitalized characters could be used to gamify typing with ["medium":"telepathic"] gesture entanglement meteors.
+		//coding as a way to see/define commoners included in a circle. 
 		//i am curious whose feature request this would be
+		//
 		foreach($commoner_circles AS $commoner_circle){
 			if(is_array($content_circles[$privileges['circle_id']])){
 
 				$privileges['read'] = ($commoner_circle['circle_id']['privilege_read'] != NULL)
-				$privileges['create'] = ($commoner_circle)
+				$privileges['create'] = ($commoner_circle['circle_id'][])
 
 				if($privileges['']['']){
 
@@ -196,6 +198,8 @@
 			}
 		}
 	}
+
+	//Privileges hierarchy: Content > Commoner (NULL defaults to circle) > Circle
 
   	function addContentToCircles($db, $table_name, $entry_id, $circles){
   		
