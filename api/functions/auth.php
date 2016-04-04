@@ -8,21 +8,20 @@
 
     if(input( 'auth', 'md5', '32', '32' ) != 0){
 
-      $row = getUser($db, $_REQUEST['auth'], 'auth', array('auth'));
+      $user = getUser($db, $_GET['auth'], 'auth', array('auth'));
 
-      if(isset($row['id'])){
+      if(isset($user['id'])){
 
-        if($row['email_confirmation_time'] > 0 
-          || $row['facebook_user_id'] > 0 
-          || $row['twitter_user_id'] > 0
+        if($user['email_confirmation_time'] > 0 
+          || $user['facebook_user_id'] > 0 
+          || $user['twitter_user_id'] > 0
           /*|| $row['google_user_id'] > 0*/){
-          $row['confirmed'] = true;
+          $user['confirmed'] = true;
         } else {
-          $row['confirmed'] = false;
+          $user['confirmed'] = false;
         }
 
-        $user = $row;
-        mysqli_query($db, "UPDATE user SET last_visit = '".time()."' WHERE auth = '{$_REQUEST['auth']}'");
+        mysqli_query($db, "UPDATE user SET last_visit = '".time()."' WHERE auth = '{$_GET['auth']}'");
 
       } else {
         $GLOBALS['newUser'] = true; //?
@@ -32,20 +31,15 @@
     if((!input( 'auth', 'md5', '32', '32' ) || $GLOBALS['newUser'] == true)){
 
       $auth = md5("LOL%I=ISUP".microtime());
-      mysqli_query($db, "INSERT INTO user (auth, last_visit) VALUES (".
+      mysqli_query($db, 'INSERT INTO user (auth, last_visit) VALUES ('.
                   "'$auth', ".
                   "'".time()."');" );
 
-      $row = getUser($db, $auth, 'auth', array('auth'));
-
-      mysqli_query($db, "INSERT INTO user_sphere (user_id, sphere_id) VALUES (".
-                  "'$auth', ".
-                  "'".time()."');" );
-
-      if(isset($row['id'])){
-        $user = $row;
-      }
+      $user = getUser($db, $auth, 'auth', array('auth'));
     }
+
+    //get user profile
+
 
     return $user;
   }
@@ -151,7 +145,7 @@
 
   function resendConfirmation($db, $user_id){
 
-    $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('me'));
+    $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('auth'));
 
     if($user['email_confirmation_code'] > 0 && $user['email_confirmation_time'] == 0){
       mailer($_REQUEST['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'username' => $user['username']), 'confirmation');
@@ -161,7 +155,7 @@
 
   function signinPerson($db, $user_id){
 
-    $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('me'));
+    $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('auth'));
 
     if($user_id > 0 && $user['id'] > 0 && md5($_REQUEST['password']) == $user['password']){
       $auth = md5("LOL%I=ISUP".microtime());

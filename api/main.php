@@ -23,7 +23,7 @@
 */
 
   include('include.php');
-  includeFunctions('dbwrapper.php');
+  includeFunctions('dbwrapper.php'); //content add/update/get and caching functions
   includeFunctions('safety.php'); //keep interactions with API/DB safe
   $db = dbWrapper();
 
@@ -50,17 +50,23 @@
 
 //Functions
   includeFunctions("auth.php"); //session, authentication, sign in/up to service
-  includeFunctions("oauth.php"); //links to social media & other services
-  includeFunctions("sphere.php"); //DB just in time maintenance
+  includeFunctions("oauth.php"); //social media & other services integrations
+
+  includeFunctions("site.php"); //site specific functions
   includeFunctions("lang.php"); //language & translation functions
   includeFunctions("user.php"); //user passport object
   includeFunctions("cron.php"); //DB just in time maintenance
-  includeFunctions("mailer/form-handler.php"); //email loop
+  includeFunctions("mailer/form-handler.php"); //email loop - inviting, confirming email or notifying
 
-  /*includeFunctions("circle.php");
+  includeFunctions("circle.php"); //circle is common grounds, encircling purposes, storylines and rules of engagement
+
   includeFunctions("place.php");
   includeFunctions("portal.php");
-  includeFunctions("reflection.php");*/
+
+  includeFunctions("reflection.php");
+  includeFunctions("value.php");
+
+  includeFunctions("sphere.php"); //sphere is an extra dimension to content, creating wormholes, a wormhole (in design...)
 
 //Facebook login
   if(!empty($_GET['code']) && !empty($_GET['state']) 
@@ -73,47 +79,58 @@
     loginTwitter($db, $_SESSION['social_login_user_id']);
   }
 
-//Authentication
-  $user = authenticate($db);
-  $response['user'] = $user;
+//Authentication & user profile data
+  $GLOBALS['user'] = authenticate($db);
+  if(!isset($_REQUEST['call'])){
+    $GLOBALS['user']['profile'] = array_merge($$GLOBALS['user'], getUserProfile($db, $GLOBALS['user']['id']));
+  }
+  $response['user'] = $GLOBALS['user'];
 
-  if($user['email_confirmation_time'] > 0 || 
-     $user['facebook_user_id'] > 0 || 
-     $response['twitter_user_id']){
-
+  if($GLOBALS['user']['email_confirmation_time'] > 0 || 
+     $GLOBALS['user']['facebook_user_id'] > 0 || 
+     $$GLOBALS['user']['twitter_user_id']){
     $response['status'] = 'welcome'; //in the sense, user is building a transparent identity
   }
 
 //Language
-  $GLOBALS['languages'] = listLanguages($db, $user_id);
-  $GLOBALS['language_id'] = $GLOBALS['languages']['en']['id'];
+  $GLOBALS['languages'] = listLanguages($db, $GLOBALS['user']['id']); //list all
   $GLOBALS['default_language_id'] = $GLOBALS['languages']['en']['id'];
+  $GLOBALS['language_id'] = $GLOBALS['languages']['en']['id']; //language of current query
   $GLOBALS['language_code'] = 'en';
 
-//Sphere is holding meanings within a common story - it's a pool of contextually related data, with services living on top of it
-  /*
-   *  Sphere is nesting sites, which use the API
-   *  A browser extension will offer frontend editing to bring meta data to sites
-   *  This API allows multiple applications on top of existing data (as is going to be the case with services living on the blockchain)
-   */
-  $GLOBALS['spheres'] = siteSpheres($db, $user, input('o', 'url', 1, 64), $GLOBALS['language_id']);
-  $GLOBALS['site_id'] = $spheres['site_id'];
+//Site
+  $GLOBALS['site_id'] = getSite($db, $GLOBALS['user']['id']);
+
+//Circle
+  if(input('circle_id', 'integer', 1, 11)){
+    $GLOBALS['circle_id'] = $_REQUEST['circle_id'];
+  }
+  $GLOBALS['circles'] = []; //circle caching object
 
 //Functions
 
-  switch($GLOBALS['o']){ //Route: object-function          ---         <3
+  switch($GLOBALS['o']){ //Route: object-function          <---
 
   //Intentions initiated, enacted in gestures - a fine blend of giving and receiving (offering, looking for)
     //# as key to codification of captured reflections social media, to fetch letters into blogchain rainbow spiral [{"topic": "impact of losing keys to data on future causes"}]
     case 'gesture':
+
       break;
 
     case 'fresh':
-      //recentContent();
+      if(input('circle_id', 'integer', 0, 11)){
+
+      } else {
+
+      }
       break;
 
     case 'nearby':
       //nearbyContent();
+      break;
+
+    case 'post':
+
       break;
 
     case 'profile':
@@ -125,7 +142,7 @@
       if($GLOBALS['f'] == 'map'){
 
         if(!input('place_id', 'integer', 1, 11)){
-          $place['user_id']       = $user_id;
+          $place['user_id']       = $GLOBALS['user']['id'];
           $place['title']         = input('title', 1, 64);
           $place['description']   = input('description', 'string', 0, 256);
           $place['address']       = input('address', 'string', 1, 128);
@@ -140,7 +157,7 @@
           $place['description']   = input('description', 'string', 1, 256);
           $place['time_updated']  = time();
         }
-        $response = mapPlace($db, $user_id, $place, $portal, $GLOBALS['language_id']);
+        $response = mapPlace($db, $GLOBALS['user']['id'], $place, $GLOBALS['language_id']);
       }
       break;
 
@@ -148,12 +165,27 @@
     case 'portal':
       if($GLOBALS['f'] == 'open'){
 
-        $portal['place_id']     = input('place_id', 1, 11);
+        if(!input('place_id', 'integer', 1, 11)){
+          $place['user_id']       = $GLOBALS['user']['id'];
+          $place['title']         = input('title', 1, 64);
+          $place['description']   = input('description', 'string', 0, 256);
+          $place['address']       = input('address', 'string', 1, 128);
+          $place['url']           = input('url', 'string', 0, 128);
+          $place['lat']           = input('lat', 'number', 1);
+          $place['lng']           = input('lng', 'number', 1);
+          $place['time']          = time();
+          $place['time_updated']  = time();
+
+          $response = mapPlace($db, $GLOBALS['user']['id'], $place, $GLOBALS['language_id']);
+          $_REQUEST['place_id'] = $response['place_id'];
+        }
+
+        $portal['place_id']     = input('place_id', 'integer', 1, 11);
         $portal['purpose']      = input('purpose', 'string', 1, 140);
         $portal['time_open']    = (strtotime(input('time_open', 'string', 1)) === false) ? time() : strtotime(input('time_open'));
         $portal['time_closed']  = (strtotime(input('time_closed', 'string', 1)) === false) ? time() + 86400 : strtotime(input('time_closed'));
 
-        $response = openPortal($db, $user, $portal, $GLOBALS['language_id']);
+        $response = openPortal($db, $GLOBALS['user']['id'], $portal, $GLOBALS['language_id']);
       }
       break;
 
@@ -173,7 +205,7 @@
 
   //Site language - adjusts to user language
     case 'siteText':
-      $response = siteText($db, $user['id']);
+      $response = siteText($db, $GLOBALS['site_id']);
       break;
 
     case 'languages':
@@ -182,27 +214,27 @@
 
   //Register / signin
     case 'passport':
-      $response = passThrough($db, $user['id']);
+      $response = passThrough($db, $GLOBALS['user']['id']);
       break;
 
     case 'loginFacebook':
-      $response = loginFacebook($db, $user['id']);
+      $response = loginFacebook($db, $GLOBALS['user']['id']);
       break;
 
     case 'loginTwitter':
-      $response = loginTwitter($db, $user['id']);
+      $response = loginTwitter($db, $GLOBALS['user']['id']);
       break;
 
     case 'checkUsername':
-      $response = usernameExists($db, $user['id']);
+      $response = usernameExists($db, $GLOBALS['user']['id']);
       break;
 
     case 'confirm':
-      $response = confirmEmail($db, $user['id']);
+      $response = confirmEmail($db, $GLOBALS['user']['id']);
       break;
 
     case 'resendConfirmation':
-      $response = resendConfirmation($db, $user['id']);
+      $response = resendConfirmation($db, $GLOBALS['user']['id']);
       break;
 
   //gesture
@@ -240,13 +272,6 @@
     if(isset($GLOBALS['translation_queue'])){
       foreach($GLOBALS['translation_queue'] AS $row){
         call_user_func('translateToDefault', $row);
-      }
-    }
-
-  //Cache queues (outdated, new inserts)
-    if(isset($GLOBALS['cache_queue'])){
-      foreach($GLOBALS['cache_queue'] AS $setup => $object){
-        cacheUpdate($db, $setup, $object);
       }
     }
 

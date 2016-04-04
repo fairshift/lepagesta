@@ -91,7 +91,6 @@
 		        	if(data.length > 0){
 		        		data = $.parseJSON(data);
 			            user = data['user'];
-			            auth = user['auth'];
 						$.cookie("auth", auth, { expires : 365 });
 
 			            //language

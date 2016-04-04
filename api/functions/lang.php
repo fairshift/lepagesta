@@ -17,20 +17,32 @@
     }
 
   //Localized site text
-    function siteText($db, $user_id){
+    function siteText($db, $user_id, $site_id){
 
-      if(input('code', 'string', '1', '10') && $user_id > 0){
+      if(input('code', 'string', '1', '10') && $user_id > 0 && $site_id > 0){
 
-        $sql =  "SELECT site_language.field, site_language.content FROM site_language ".
-                "INNER JOIN ( ".
-                    "SELECT field, MAX(time) time ".
-                    "FROM site_language ".
-                    "GROUP BY field ".
-                ") buffer ON site_language.field = buffer.field AND site_language.time = buffer.time";
-        $result = mysqli_query($db, $sql);
+        $cache['route']['site_language.site_id'] = $site_id;
+        $cache['structure']['site_language'] = array('field', 'content');
 
-        while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
-          $response[$row['field']] = $row['content'];
+        if(!$response = existingCache($db, $cache)){
+
+
+          $sql =  "SELECT site_language.field, site_language.content FROM site_language ".
+                  "INNER JOIN ( ".
+                      "SELECT field, MAX(time) time ".
+                      "FROM site_language ".
+                      "GROUP BY field ".
+                  ") buffer ON site_language.field = buffer.field AND site_language.time = buffer.time";
+          $result = mysqli_query($db, $sql);
+
+          while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+            $response[$row['field']] = $row['content'];
+          }
+
+          $cache['object'] = $response;
+          updateCache($db, $cache);
+
+          $response['caching'] = true;
         }
 
         return $response;

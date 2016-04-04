@@ -2,9 +2,11 @@
   function getUser($db, $id, $selector, $preset){
 
     if(in_array("auth", $preset)){
-      $select = "id, username, email, time_registered, last_visit, email_confirmation_time, facebook_user_id, twitter_user_id";
+      $select = "id, id AS user_id, username, email, time_registered, last_visit, email_confirmation_time, facebook_user_id, twitter_user_id, site_language_id";
     } elseif(in_array("me", $preset)){
-      $select = "id, auth, password, username, email, email_confirmation_code, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id";
+      $select = "id, id AS user_id, auth, password, username, email, email_confirmation_code, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id, site_language_id, profile_picture";
+    } elseif(in_array("avatar", $preset)){
+      $select = "id, id AS user_id, auth, password, username, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id, site_language_id, profile_picture";
     }
 
     if($selector == 'auth'){
@@ -26,17 +28,10 @@
     $sql = "SELECT $select FROM user WHERE $where";
  
     $result = mysqli_query($db, $sql);
-    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+    if($response = mysqli_fetch_array($result, MYSQLI_ASSOC)){
       return $row;
     } else {
-      return 0;
+      return false;
     }
-  }
-
-  function getUserProfile($db, $user){
-    //circles
-    //gestures
-      //reflections
-    //
   }
 ?>
