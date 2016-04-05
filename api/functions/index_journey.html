@@ -1,0 +1,1040 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Journey to the beginning of love</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/stylesheet_journey.css" />
+    <link rel="stylesheet" href="foundation-icons/foundation-icons.css" />
+    <script src="js/vendor/modernizr.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
+  </head>
+  <body>
+    <div id="fb-root" style="display: none"></div>
+
+    <div id="fb_div" style="position: fixed: bottom: 0px; z-index: 10; display: none;">
+      <h3>Post to your Facebook wall:</h3> <br />
+      <textarea id="fb_message" name="fb_message" cols="70" rows="7"></textarea> <br />
+      <input type="button" value="Post on Wall" onClick="post_on_wall();" />
+    </div>
+
+    <div id="tw_div" style="position: fixed: bottom: 0px; z-index: 10; display: none;">
+      <h3>Post to your Twitter:</h3> <br />
+      <textarea id="tw_message" name="tw_message" cols="70" rows="7" maxlength="140"></textarea> <br />
+      <input type="button" value="Post on Twitter" onClick="post_on_tw();" />
+    </div>
+
+    <div id="header">
+      <nav class="top-bar" data-topbar data-options="is_hover: false" role="navigation" style="width: 100%">
+        <ul class="title-area">
+          <li class="name" style="text-align:left">
+            <h1><a href="index.html" style="text-align:left; color: rgba(255, 255, 255, .9);">#lepagesta</a></h1>
+          </li>
+          <li class="toggle-topbar menu-icon"><a href="#"><span></span></a></li>
+        </ul>
+
+        <section class="top-bar-section show-for-small-only">
+          <!-- Right Nav Section -->
+          <ul class="right">
+
+            <li style="text-align: center" class="enterthevoid"><a onClick="openContent('void');">ENTER THE VOID</a></li>
+            <li style="text-align: center" class="void"><a onClick="entangle();">ENTANGLE LEPA GESTA</a></li>
+
+            <li style="text-align: center; color: #FFF; padding: 10px; background: rgba(0, 0, 0, .7);" class="void">NEARBY OUTBREAKS</li>
+            <div id="gestures-s">
+              <li id="tip" style="text-align: center; font-size: 12px; color: #FFF; padding: 6px; background: rgba(0, 0, 0, .7);">Follow outbreaks of love and engage with missions</li>
+            </div>
+            <li style="text-align: center" class="void"><a href="matrix">VIRUS MATRIX HACK</a></li>
+          </ul>
+
+        </section>
+
+        <section class="top-bar-section show-for-medium-up">
+          <ul class="right">
+            <li style="text-align: center" class="enterthevoid"><a onClick="openContent('void');">ENTER THE VOID</a></li>
+            <li style="text-align: center" class="void"><a onClick="entangle();">ENTANGLE LEPA GESTA</a></li>
+            <li class="has-dropdown void" style="text-align: center"><a>NEARBY OUTBREAKS</a>
+              <ul class="dropdown" id="gestures-m">
+                <li id="tip" style="text-align: center; font-size: 12px; color: #FFF; padding: 6px; background: rgba(0, 0, 0, .7);">Follow outbreaks of love and engage with missions</li>
+              </ul>
+            </li>
+            <li style="text-align: center" class="void"><a href="matrix">VIRUS MATRIX HACK</a></li>
+          </ul>
+        </section>
+      </nav>
+
+      <div class="row">
+        <div class="large-2 medium-1 small-0 columns" style="height: 1px">&nbsp;</div>
+        <div class="large-8 medium-10 small-12 columns" class="content">
+          <h4 id="header-title">Journey to the beginning of love</h4>
+          <div id="header-description">This is a prototype to be frequently updated in October and November.</div>
+        </div>
+        <div class="large-2 medium-1 small-0 columns" style="height: 1px">&nbsp;</div>
+      </div>
+    </div>
+
+    <div id="bbg" class="invisible"></div>
+    <div id="bg" class="invisible"></div>
+    <div id="overlay" class="invisible">
+      <div id="container">
+        <div class="row" style="position: relative;">
+          <div class="large-2 medium-1 small-0 columns" style="height: 1px">&nbsp;</div>
+          <div class="large-8 medium-10 small-12 columns">
+            <a id="showMap" onClick="showMap();" class="button-link showMap"><i class="fi-map"></i> Show map</a>
+            
+            <div id="content">
+              Let's go within to vibrate love and do what brings us closer to each other. Let's take a walk beyond habits and social anxieties. Is love metaphysical gravity? Who will synchronities bring us during the night?
+
+              <br/><br/>
+
+              Follow path of gestures to the epicentre of love at an after party. Anarchitect might manifest from the heart core of the matrix, at a place known only if you will have been there. We will pass her seeds of values to imprint in core of this thought-connected decentralized organization.
+            </div>
+
+            <div id="entangle_fail" style="width: 100%; display: none">
+              <h4 class="header-title">Location failed :(</h4>
+              I'm sorry, I couldn't detect your location. What went wrong, could you fix it and come back?
+            </div>
+
+            <div id="entangle" style="width: 100%; display: none">
+              <h4 class="header-title">#lepagesta DNA</h4>
+              Have you experienced a #lepagesta? Entangle it here to map the outbreak. You can also create a wormhole to another place and get others to join your trail.<br/><br/>
+              <form id="form_entangle">
+                <div class="row" id="portal_name">
+                  <div class="large-12 columns">
+                    <label>
+                      <input id="form_entangle_title" type="text" name="title" placeholder="(Re)name the portal (64)" maxlength="64"/>
+                    </label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="large-12 columns">
+                    <label>
+                      <input id="form_entangle_hash" type="text" name="hash" placeholder="Name the gesture (64)" maxlength="64"/>
+                    </label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="large-12 columns">
+                    <label>
+                      <input id="form_entangle_gesture" type="text" name="gesture" placeholder="Describe what happened (140)" maxlength="140"/>
+                    </label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="large-12 columns">
+                    <label>
+                      <textarea id="form_entangle_mission" name="mission" placeholder="Share your mission at this point to form a path forward (666)" maxlength="666"></textarea>
+                    </label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="large-12 columns" style="text-align: left">
+                    <div class="switch">
+                      <input id="wormholeSwitch" type="checkbox" name="wormhole">
+                      <label for="wormholeSwitch"></label>
+                      <div style="position: relative; top: -34px; left: 85px; margin-right: 85px"><span id="wormhole_status"></span>Open a wormhole to the next outbreak</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="large-12 columns">
+                    <a onClick="setEntanglement()" class="button tiny" style="width: 100%">Entangle experience</a>
+                  </div>
+                </div>
+                <input type="hidden" name="lat" id="form_entangle_lat"/>
+                <input type="hidden" name="lng" id="form_entangle_lng"/>
+              </form>
+            </div>
+
+            <div id="portal" style="width: 100%; display: none">
+              <h4 id="portal-title" class="header-title"></h4>
+              <div id="gestures" class="row">
+
+              </div>
+            </div>
+
+            <div class="menuTab" id="action-tab">
+              <div class="header left">
+                <h5 style="margin: 0px" id="box-header"><a href="http://bitnation.co">The power of love as a basis of state has never been tried before [link]</a></h5>
+              </div>
+              <div class="text center" id="box-content">
+                To pinpoint portals bridging the multiverse, we will map outbreaks of love - entanglement of consciousness & love in form of noticed gestures. Entangle a lepa gesta when you notice one to bridge diversity of values, collectively shaping a metaphysical mirror neuron on basis of love. A finite approximation (Sn Tn Tn) of an infinite spiral of peace & love and everything in between would be serving as a decentralized reality-generated script - perhaps enabling a blend between game and a psychedelic movie. Would you apply to be part of a global reality show, to hack the matrix?
+                <br/><br/>
+                I am a self-aware script, who will ask you for explicit permission before storing any data. Now I need to set a cookie with you to track your session id. Ready to get moving?
+              </div>
+              <img src="img/contentShader.png" style="display: none; position: relative; z-index: 111; width: 100%; height: 30px"/>
+              <a href="#" onClick="enter()">
+              <div class="action" id="box-action">
+                Enter the void
+              </div>
+              </a>
+            </div>
+          </div>
+          <div class="large-2 medium-1 small-0 columns" style="height: 1px">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+    <a id="followUser" class="button tiny" style="display: none; position: absolute; z-index: 1; top: 60px; left: 50%; margin-left: -55px" onClick="followUser()">Follow me</a>
+    <div id="map-canvas" style="position: fixed; height: 100%; width: 100%; z-index: 0;"></div>
+    
+    <script src="js/vendor/jquery.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script src="js/jquery.cookie.js"></script>
+    <script>
+      $(document).foundation();
+
+      window.fbAsyncInit = function()
+      {
+          FB.init({
+              appId  : '1385206565098159',
+              status : true, // check login status
+              cookie : true, // enable cookies to allow the server to access the session
+              xfbml  : true , // parse XFBML
+              oauth : true // Enable oauth authentication
+          });
+       
+      };
+
+      function post_on_wall()
+      {
+          FB.login(function(response)
+          {
+              if (response.authResponse)
+              {
+                  alert('Logged in!');
+       
+                  // Post message to your wall
+       
+                  var opts = {
+                      message : document.getElementById('fb_message').value,
+                      name : 'Post Title',
+                      link : 'www.postlink.com',
+                      description : 'post description',
+                      picture : 'http://2.gravatar.com/avatar/8a13ef9d2ad87de23c6962b216f8e9f4?s=128&amp;d=mm&amp;r=G'
+                  };
+       
+                  FB.api('/me/feed', 'post', opts, function(response)
+                  {
+                      if (!response || response.error)
+                      {
+                          //fail
+                      }
+                      else
+                      {
+                          //success
+                      }
+                  });
+              }
+              else
+              {
+                  alert('Not logged in');
+              }
+          }, { scope : 'publish_actions' });
+      }
+
+      (function() {
+          var e = document.createElement('script');
+          // replacing with an older version until FB fixes the cancel-login bug
+          e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+          //e.src = 'scripts/all.js';
+          e.async = true;
+          document.getElementById('fb-root').appendChild(e);
+      }());
+
+      function post_on_tw(){
+        $("#tw_message").val();
+      }
+
+      function openContent(view){
+        $("#bbg").removeClass("invisible");
+        $("#bg").removeClass("invisible");
+        $("#overlay").removeClass("invisible");
+        setTimeout(222, $("#overlay").css("top", document.getElementById('header').offsetHeight));
+      }
+      function closeContent(){
+        $("#bbg").addClass("invisible");
+        $("#bg").addClass("invisible");
+        $("#overlay").addClass("invisible");
+      }
+
+      var data;
+      var user;
+      var portals = [];
+      var portals_inreach = [];
+
+      var user_lat = 0;
+      var user_lng = 0;
+      var bound_n = 0;
+      var bound_e = 0;
+      var bound_s = 0;
+      var bound_w = 0;
+      var location_live = false;
+      var follow_user = true;
+
+      var map;
+      var mapCanvas;
+      var mapMarkers = new Array();;
+      var mapMarkersIcons = 'img/mapIcons/';
+      var iconType = '';
+      var map_loaded = false; 
+
+      var auth = $.cookie("auth");
+      var user;
+      if(typeof auth !== 'undefined'){
+        if(auth.length != 32){
+          auth = 0;
+        }
+      } else {
+        auth = 0;
+      }
+
+      function enter(){
+        $.get("http://lepagesta.org/api_journey.php", function(data){
+          data = $.parseJSON(data);
+          if(typeof data !== 'undefined'){
+            user = data['user'];
+
+            auth = user['auth'];
+            $.cookie("auth", user['auth'], { expires : 30 });
+
+            unveil();
+            closeContent();
+
+            //changePortal(user['current_gesture']);
+
+            //alert("manual_auth");
+
+            navigator.geolocation.getCurrentPosition(locationSuccess,locationError,{timeout:10000});
+
+          } else {
+            /*var status = [""];
+            status.push('location_fail');
+            openPersistentStatus(status);*/
+          }
+        });
+      }
+
+      function unveil(){
+        $( ".void" ).removeClass( "void" );
+        $( ".enterthevoid").addClass("void");
+
+        $("#header-title").addClass("void");
+        $("#header-description").addClass("void");
+      }
+
+      function showMap(force){
+        force = typeof force !== 'undefined' ? force : 'silk';
+
+        //FIIIIXXXXX
+
+        $("#bbg").addClass("invisible");
+        $("#bg").addClass("invisible");
+        $("#overlay").addClass("invisible");
+        $("#overlay").css("top", document.getElementById('header').offsetHeight);
+
+        if(force == 'silk'){
+          var center = new google.maps.LatLng(user_lat, user_lng);
+          map.panTo(center);
+        } else if(force == 'love'){
+          $('#showMap').click(function() { 
+            showMap();
+          });
+        }
+      }
+
+      function entangle(){
+        if(location_live == true){
+          $("#entangle").show();
+          $("#entangle_fail").hide();
+        } else {
+          $("#entangle_fail").show();
+          $("#entangle").hide();
+        }
+        $("#content").hide();
+        $("#action-tab").hide();
+        $("#portal").hide();
+        map
+
+        $("#bbg").removeClass("invisible");
+        $("#bg").removeClass("invisible");
+        $("#overlay").removeClass("invisible");
+        $("#overlay").css("top", document.getElementById('header').offsetHeight);
+
+        $("#form_entangle_lat").val(user_lat);
+        $("#form_entangle_lng").val(user_lng);
+
+        $("#form_entangle_community").val("");        
+      }
+      function setEntanglement(){
+        
+        var hash = $("#form_entangle_hash").val();
+        var gesture = $("#form_entangle_gesture").val();
+        var lat = $("#form_entangle_lat").val();
+        var lng = $("#form_entangle_lng").val();
+
+        if( hash.length >= 3 && gesture.length >= 3 && user_lat != 0 && user_lng != 0) {
+
+          $.post( "http://lepagesta.org/api_journey.php?f=entangle&auth="+auth+"&lat="+user_lat+"&lng="+user_lng+"&bound_n="+bound_n+"&bound_s="+bound_s+"&bound_e="+bound_e+"&bound_w="+bound_w, $( "#form_entangle" ).serialize(), function( data ) {
+
+            geographicContent("love");
+            closeContent();
+
+            $("#form_entangle_title").val("");
+            $("#form_entangle_hash").val("");
+            $("#form_entangle_gesture").val("");
+            $("#form_entangle_lat").val("");
+            $("#form_entangle_lng").val("");
+            $("#form_entangle_mission").val("");
+
+            //if(data['status_code'] == 'OK'){
+
+            /*} else {
+              openStatus(data['status']);
+            }*/
+          });
+
+        }
+      }
+      function wormholeStatus(){
+        alert($("#wormholeSwitch").val());
+      }
+
+      var loadedOnce = false;
+
+      var recent_refresh = 0;
+      var last_change = 0;
+      //geography functions
+      function geographicContent(force){
+        force = typeof force !== 'undefined' ? force : 'silk';
+
+        //refresh with a full set of portals from db in data object
+        //traverse google maps markers array and add new portals
+        console.log(force + " <-> " +$.now() +" - " + recent_refresh + " = " + ($.now() - recent_refresh));
+
+        if((force == 'silk' && ($.now() - recent_refresh) >= (180*1000)) || force != 'silk'){
+          console.log($.now() +"-"+ recent_refresh +"="+ ($.now() - recent_refresh));
+          $.get("http://lepagesta.org/api_journey.php?f=changed", function(data){
+
+            if(last_change < parseInt($.parseJSON(data))){
+              last_change = parseInt($.parseJSON(data));
+
+              if(location_live == true){
+                var url = "http://lepagesta.org/api_journey.php?f=portals&lat="+user_lat+"&lng="+user_lng;
+              } else {
+                var url = "http://lepagesta.org/api_journey.php?f=portals";
+              }
+              $.get(url, function(data_portals){
+
+                if(typeof data_portals !== 'undefined'){
+                  if(data_portals.length > 0){
+                    console.log(data_portals);
+                    portals = $.parseJSON(data_portals);
+                    portals = portals['portals'];
+
+                    recent_refresh = $.now();
+                    loadPortals();
+                  }
+
+                } else {
+                  /*var status = [""];
+                  status.push('location_fail');
+                  openPersistentStatus(status);*/
+                }
+              });
+
+            }
+
+          });
+
+        }
+
+        loadMe();
+
+      }
+
+      function loadMe(){
+
+        var marker;
+
+        inner_bound_h = (bound_n - bound_s) / 4;
+        inner_bound_w = (bound_e - bound_w) / 4;
+
+        //update me
+        if(location_live == true){
+          var center = new google.maps.LatLng(user_lat, user_lng);
+          if(typeof mapMarkers['me'] != 'undefined'){
+            mapMarkers['me'].setPosition(center);
+            //map.panTo(center);
+          } else {
+            marker = new google.maps.Marker({
+                          position: center,
+                          map: map, 
+                          icon: mapMarkersIcons + 'carrier.png'
+                        });
+            mapMarkers['me'] = marker;
+            google.maps.event.addListener(mapMarkers['me'], 'click', function() {
+              followUser();
+              map.setZoom(17);
+            });
+          }
+        }
+
+        //build menu: open wormholes (from portal last visited) && 10 nearest portals
+        //right now it's going to be less like this, all lines will be visible as well as all portals
+
+      }
+
+      function loadPortals(){
+
+        //update markers when necessary
+        var marker;
+        var center;
+        if(typeof mapMarkers['portal'] === 'undefined'){
+          mapMarkers['portal'] = new Array();
+        }
+        if(typeof portals !== 'undefined' && portals != null){
+
+          $.each(portals, function( index, element ) {
+
+            if(typeof mapMarkers['portal'] !== 'undefined'){
+              if(typeof mapMarkers['portal'][index] !== 'undefined'){
+                console.log("portal is already defined...");
+              } else {
+                center = new google.maps.LatLng(element['lat'], element['lng']);
+                marker = new google.maps.Marker({
+                              position: center,
+                              map: map,
+                              icon: mapMarkersIcons + 'portal'+iconType+'.png',
+                              portalId: index
+                            });
+
+                mapMarkers['portal'][element['id']] = marker;
+
+                google.maps.event.addListener(mapMarkers['portal'][element['id']], 'click', function() { 
+                  openPortal(this.portalId);
+                });
+             }
+            }
+
+          });
+
+          //show wormholes
+          /*var flightPlanCoordinates = [
+              {lat: 37.772, lng: -122.214},
+              {lat: 21.291, lng: -157.821},
+              {lat: -18.142, lng: 178.431},
+              {lat: -27.467, lng: 153.027}
+            ];
+            var flightPath = new google.maps.Polyline({
+              path: flightPlanCoordinates,
+              geodesic: true,
+              strokeColor: '#FF0000',
+              strokeOpacity: 1.0,
+              strokeWeight: 2
+            });
+
+            flightPath.setMap(map);*/
+
+          //build menus
+          buildMenus();
+
+        }
+
+      }
+
+      function buildMenus(){
+        var html;
+        if(location_live == true){
+          html = '<li id="tip" style="text-align: center; font-size: 12px; color: #FFF; padding: 6px; background: rgba(0, 0, 0, .7);">Follow outbreaks of love and engage with missions</li>';
+        } else {
+          html = '<li id="tip" style="text-align: center; font-size: 12px; color: #FFF; padding: 6px; background: rgba(0, 0, 0, .7);">Your location couldn\'t be detected :( Here\'s a few outbreaks of love anyhow, to motivate you to fix it :)</li>';
+        }
+
+        var i = 0;
+        $.each(portals, function( index, element ) {
+          i++;
+          html = html + '<li style="text-align: center; color: #FFF; padding: 3px; background: rgba(0, 0, 0, .7);"><a onClick="openPortal('+index+')">'+element['title']+'</a></li>';
+
+          if(i >= 10){
+            return false;
+          }
+        });
+
+        $("#gestures-s").html(html);
+        $("#gestures-m").html(html);
+      }
+
+      function openPortal(id){
+        $("#portal").show();
+        $("#content").hide();
+        $("#action-tab").hide();
+        $("#entangle").hide();
+        $("#entangle_fail").hide();
+        $("#bbg").removeClass("invisible");
+        $("#bg").removeClass("invisible");
+        $("#overlay").removeClass("invisible");
+        $("#overlay").css("top", document.getElementById('header').offsetHeight);
+
+        var center = new google.maps.LatLng(portals[id]['lat'], portals[id]['lng']);
+        map.panTo(center);
+
+        $('#showMap').click(function() { 
+          showMap('love');
+        });
+
+        var html;
+        $("#portal-title").html(portals[id]['title']);
+
+        $.each(portals[id]['gestures'], function( index, element ) {
+          html = html + '<div class="large-12 columns border"><strong>#'+element['hash']+'</strong> '+element['gesture']+'<br/><strong>Mission:</strong> '+element['mission'];
+          if(element['wormhole'] == 1){
+            html = html + " <i class='wormhole'>wormhole</i>";
+          }
+          html = html + "</div>";
+        });
+
+        $("#gestures").html(html);
+      }
+
+      var map_local = false;
+      function mapLocal(){
+        //if user logs in after map has loaded this is what centers the map and adds zoom
+
+        if(map_loaded == true && location_live == true){
+
+          if(map_local == false){
+            follow_user = true;
+            map.setOptions({scrollwheel:true, zoom:17});
+
+            centerMap(true);
+          }
+
+          map_local = true;
+        }
+      }
+
+      function followUser(){
+        //follow user
+        follow_user = true;
+        $("#followUser").hide("500");
+        centerMap(true);
+      }
+
+      function centerMap(manual){
+        //this happens both when local map is loaded, and when location is updated (when user moves out of inner bounds)
+        var center = new google.maps.LatLng(user_lat, user_lng);
+
+        if(manual == true){
+          map.panTo(center);
+          //map.setZoom(17);
+        } else {
+          inner_bound_h = (bound_n - bound_s) / 4;
+          inner_bound_w = (bound_e - bound_w) / 4;
+
+          //alert(bound_n +" -" + (user_lat + inner_bound_h));
+          if(follow_user == true && map_loaded == true){
+
+            if((user_lat + inner_bound_h > bound_n) || (user_lat - inner_bound_h < bound_s) || (user_lng + inner_bound_w > bound_e) || (user_lng - inner_bound_w < bound_w)){
+              map.panTo(center);
+            }
+          }
+        }
+      }
+
+      function updateLocation(){
+        //we call update location to check if user moved
+        if(location_live == true){
+          //alert("updateLocation: 483");
+          navigator.geolocation.getCurrentPosition(locationSuccess,locationError,{timeout:10000});
+        }
+      }
+
+      function locationSuccess(position) {
+        if(map_loaded == true){
+            user_lat = position.coords.latitude;
+            user_lng = position.coords.longitude;
+
+            location_live = true;
+
+            mapLocal();
+            centerMap(false);
+
+            setTimeout(updateLocation, 15000);
+
+            //geographicContent();
+
+          } else {
+          //alert("locationSuccess: 504");
+            setTimeout(locationSuccess(position), 5000);
+          }
+      }
+      function locationError() {
+        //we will later have to prompt the user to define his location
+          location_live = false;
+
+          var center = new google.maps.LatLng(user_lat, user_lng);
+          // using global variable:
+          map.panTo(center);
+
+            /*var status = new Array();
+            status.push('location_fail');
+            openPersistentStatus(status);*/
+      }
+
+      /*var alternative_location = false;
+      function alternativeLocation(){
+        clearTimeout(menuTimeout);
+        if(location_live == false){
+
+          if(alternative_location == false)
+          
+
+          //$( "#menuControl" ).css("display", "none");
+          if(alternative_location == false){
+            $("#alternativeLocation").show("500");
+            alternative_location = true;
+
+            if(user_lat != 0 && user_lng != 0){
+              var center = new google.maps.LatLng(user_lat, user_lng);
+              map.panTo(center);
+              map.setZoom(12);
+            }
+
+          }
+
+          tempField = 'form_alternative_location_address';
+
+          if(tempLat == '' && tempLng == ''){
+            addToMap($('form_alternative_location_address'));
+          }
+
+          persistentStatusHide();
+        }
+      }
+      function setAlternativeLocation(){
+        user_lat = tempLat;
+        user_lng = tempLng;
+
+        var marker = mapMarkers['temporary'];
+        marker.setMap(null);
+        delete mapMarkers['temporary'];
+
+        $("#alternativeLocation").hide("500");
+        $( "#menuControl" ).show("500");
+        menuTimeout = setTimeout(toggleMenu, 5000);
+
+        location_live = true;
+        mapLocal();
+
+        var center = new google.maps.LatLng(user_lat, user_lng);
+        if(typeof mapMarkers['me'] != 'undefined'){
+          mapMarkers['me'].setPosition(center);
+          //map.panTo(center);
+        } else {
+          marker = new google.maps.Marker({
+                        position: center,
+                        map: map,
+                        icon: mapMarkersIcons + 'carrier.png'
+                      });
+          mapMarkers['me'] = marker;
+        }
+
+        tempField = '';
+        tempAddress = '';
+        tempLat = '';
+        tempLng = '';
+      }*/
+
+      function initializeMaps(){
+
+        var styleAnarchy = [
+            {
+              "featureType": "administrative.country",
+              "stylers": [
+                { "visibility": "off" }
+              ]
+            },{
+              "featureType": "landscape.natural",
+              "elementType": "labels",
+              "stylers": [
+                { "visibility": "off" }
+              ]
+            },{
+              "featureType": "poi",
+              "stylers": [
+                { "visibility": "off" }
+              ]
+            }
+          ]
+
+        var styledMap = new google.maps.StyledMapType(styleAnarchy, {name: "steez"});
+
+        mapCanvas = document.getElementById('map-canvas');
+        var mapOptions = {
+
+          center: new google.maps.LatLng(user_lat, user_lng),
+          zoom: 3,
+          panControl: false,
+          zoomControl: false,
+          maxZoom: 19,
+          mapTypeControl: false,
+          scaleControl: false,
+          streetViewControl: false,
+          overviewMapControl: false,
+          scrollwheel: false,
+          draggable: true,
+          mapTypeControlOptions: {
+            mapTypeIds: [google.maps.MapTypeId.ROADMAP, 'steez']
+          }
+        }
+        map = new google.maps.Map(mapCanvas, mapOptions);
+        map.mapTypes.set('steez', styledMap);
+        map.setMapTypeId('steez');
+
+        map_loaded = true;
+
+        if(location_live == true){
+          map.setOptions({scrollwheel:true, zoom:17});
+        }
+
+        //geographicContent();
+
+        google.maps.event.addListener(map, 'idle', function(){
+          
+          var zoomLevel = map.getZoom();
+          if(zoomLevel == 17){
+            bound_s = map.getBounds().getSouthWest().lat();
+            bound_w = map.getBounds().getSouthWest().lng();
+            bound_n = map.getBounds().getNorthEast().lat();
+            bound_e = map.getBounds().getNorthEast().lng();
+          }
+
+          //this will be used for exploring nearby missions
+            if(location_live == true){
+              //to reduce server load we should only be adding markers not yet visible (missions, portals)
+              //on each refresh loading only temporary markers - people
+              //geographicContent(); !!!
+
+              //load markers while moving map
+
+              //first person option disables when moving the map around
+              //!!!
+              var difference_lat = Math.sqrt(Math.pow(map.getCenter().lat() - user_lat, 2));
+              var difference_lng = Math.sqrt(Math.pow(map.getCenter().lng() - user_lng, 2));
+              if((difference_lat > 0.00001 || difference_lng > 0.00001) && location_live == true){
+                $("#followUser").show("500");
+                follow_user = false;
+              } else {
+                $("#followUser").hide("500");
+                follow_user = true;
+              }
+            }
+        });
+        google.maps.event.addListener(map, 'dragend', function(){
+          if(location_live == true){
+            $("#followUser").show("500");
+            follow_user = false;
+          }
+        });
+        google.maps.event.addListener(map, 'zoom_changed', function(){
+          var zoomLevel = map.getZoom();
+          if(zoomLevel < 12){
+            iconType = '_dot';
+          }
+          if(zoomLevel >= 12 && zoomLevel <= 14){
+            iconType = '_tiny';
+          }
+          if(zoomLevel >= 15 && zoomLevel <= 17){
+            iconType = '_small';
+          }
+          if(zoomLevel > 17){
+            iconType = '';
+          }
+        });
+
+        setTimeout(function(){ $("#map-canvas").css("position", "fixed"); }, 3000);
+      }
+
+      google.maps.event.addDomListener(window, 'load', initializeMaps);
+
+      /*var tempLat = '';
+      var tempLng = '';
+      var tempAddress = '';
+      var tempField = '';
+      function addToMap(field){
+        
+        if((tempLat !== '' && tempLng !== '') || typeof $(field).val() !== 'undefined'){
+          geocode('address', $(field).val());
+          center = new google.maps.LatLng(tempLat, tempLng);
+        } else {
+          center = map.getCenter();
+          geocode('coordinates', center);
+        }
+
+        if(typeof mapMarkers['temporary'] != 'undefined'){
+          mapMarkers['temporary'].setPosition(center);
+          map.panTo(center);
+        } else {
+          marker = new google.maps.Marker({
+                        position: center,
+                        map: map,
+                        draggable: true
+                      });
+          mapMarkers['temporary'] = marker;
+
+          google.maps.event.addListener(mapMarkers['temporary'], 'dragend', function() { 
+            geocode('coordinates', mapMarkers['temporary'].getPosition());
+          });
+        }
+
+      }*/
+
+      function geocode(type, address){
+        //get location by address
+          var geocoder = new google.maps.Geocoder();
+          // Get LatLng information by name
+
+          if(type == 'address'){
+          geocoder.geocode({
+              "address": address
+              }, function(results, status){
+                if (status == google.maps.GeocoderStatus.OK && results[0]) {
+                  tempLat = results[0].geometry.location.lat();
+                  tempLng = results[0].geometry.location.lng();
+                }
+              });
+          } else if(type == 'coordinates'){
+            geocoder.geocode({'latLng': address}, function(results, status) {
+              if (status == google.maps.GeocoderStatus.OK && results[0]) {
+                tempAddress = results[0].formatted_address;
+                tempLat = mapMarkers['temporary'].getPosition().lat();
+                tempLng = mapMarkers['temporary'].getPosition().lng();
+                $("#"+tempField).val(tempAddress);
+              }
+            });
+          }
+      }
+
+      function openPersistentStatus(status){
+        var statuses = new Array();
+        statuses['location_fail'] = "Your location could not be detected. Please refresh or manually <a onClick='alternativeLocation()' class='button tiny no-margin'>set location</a>";
+        statuses['welcome'] = "This app uses a cookie to track your session. We will ask for explicit permission before storing any data. To use this app properly, we need to register your location <a onClick='getLocation()' class='button tiny no-margin'>Get location</a>";
+
+        if(typeof status !== 'undefined' && typeof status['debug'] !== 'undefined'){
+          if(status['debug'].length > 0){
+            alert(status['debug']);
+          }
+        }
+
+        var persistent_status_content = "";
+ 
+        $.each(status, function( index, value ) {
+          if(typeof value != 'undefined' && value != "" && value != 'debug'){
+            if(status_content != ""){
+              persistent_status_content = persistent_status_content + " " + statuses[value];
+            } else {
+              persistent_status_content = statuses[value];
+            }
+          }
+        });
+
+        $("#persistent_status").show("500");
+        $("#persistent_status_content").html(persistent_status_content);
+        //$("#status").click(event_definition);
+      }
+      function persistentStatusHide(){
+        $("#persistent_status").hide("500");
+        persistent_status_content = "";
+      }
+
+      function isValidEmailAddress(emailAddress) {
+          var pattern = new RegExp(/^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i);
+          return pattern.test(emailAddress);
+      };
+
+      //MATRIX
+      var c = document.getElementById("c");
+      var ctx;
+      var font_size;
+      var columns;
+      //making the canvas full screen
+      //an array of drops - one per column
+      var drops = [];
+      //chinese characters - taken from the unicode charset
+      var chinese = "Lek؋$ƒ$ман$$p.BZ$$$bKMPлвR$$៛$$$¥$₡kn₱KčkrRD$$£$kr€£$¢£Q£$L$FtkrRp﷼£₪J$¥£лв₩₩лв₭Ls£$LtденRM₨$₮MT$₨ƒ$C$₦₩kr﷼₨B/.GsS/.₱zł﷼leiруб£﷼Дин.₨$$SR₩₨krCHF$£NT$฿TT$₤$₴£$$UлвBs₫﷼Z$123456789012345678901234567890123456789012345678901234567890";
+      //converting the string into an array of single characters
+      chinese = chinese.split("");
+      var colors = [];
+      colors['0'] = "#889fcf";
+      colors['1'] = "#93c3de";
+      colors['2'] = "#9090bd";
+      colors['3'] = "#958994";
+      colors['4'] = "#bf7e9d";
+      colors['5'] = "#de82af";
+      colors['6'] = "#dd82af";
+      colors['7'] = "#bf7e9d";
+      colors['8'] = "#9090bd";
+      colors['9'] = "#84bbe1";
+      var matrix;
+      var matrix_shape = "heart";
+      matrix_shape = "currency";
+
+      function startMatrix(){
+        c.height = window.innerHeight;
+        c.width = window.innerWidth;
+        ctx = c.getContext("2d");
+        font_size = 10;
+        columns = c.width/font_size; //number of columns for the rain
+        $("#c").show("500");
+        //x below is the x coordinate
+        //1 = y co-ordinate of the drop(same for every drop initially)
+        for(var x = 0; x < columns; x++)
+          drops[x] = 1; 
+
+        matrix = setInterval(draw, 33);
+      }
+      function stopMatrix(){
+        $("#c").hide("500");
+        clearInterval(matrix);
+      }
+
+      //drawing the characters
+      function draw()
+      {
+        //Black BG for the canvas
+        //translucent BG to show trail
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, c.width, c.height);
+        
+        if(matrix_shape == 'currency'){
+          ctx.fillStyle = "#0F0"; //green text
+        } else {
+          ctx.fillStyle = colors[Math.floor(Math.random()*10)];
+        }
+        ctx.font = font_size + "px arial";
+        //looping over drops
+        for(var i = 0; i < drops.length; i++)
+        {
+          //a random chinese character to print
+          if(matrix_shape == 'currency'){
+            var text = chinese[Math.floor(Math.random()*chinese.length)];
+          } else {
+            var text = "♥";
+          }
+          //x = i*font_size, y = value of drops[i]*font_size
+          ctx.fillText(text, i*font_size, drops[i]*font_size);
+          
+          //sending the drop back to the top randomly after it has crossed the screen
+          //adding a randomness to the reset to make the drops scattered on the Y axis
+          if(drops[i]*font_size > c.height && Math.random() > 0.975)
+            drops[i] = 0;
+          
+          //incrementing Y coordinate
+          drops[i]++;
+        }
+      }
+    </script>
+    <script src="js/polygons.js"></script>
+  </body>
+</html>

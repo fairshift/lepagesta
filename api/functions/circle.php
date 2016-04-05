@@ -13,18 +13,19 @@
 		c) s/he clicked on it in a circle
   */
 
- 	function getCirclesBy($db, $by, $get_privileges_only = false, $parent_cache = false){
+	//Idea: Reflections from current circle could be complementing privileges in circles - showcasing implicit rules of engagement with appreciated gestures
+
+ 	function getCirclesBy($db, $by, $get_privileges_user_id = false, $parent_cache = false){
 
 		$user_id = $GLOBALS['user_id'];
 
 	    if($user_id){
 
-	    	if($by['table_name'] && $by['entry_id']){ //Caching by content
+	    	if($by['content_id']){ //Caching by content
 
 	    		$cache['route'] = cacheSetRoute(__FUNCTION__, func_get_args());
 		    	$rand = mt_rand();
-			    $cache['dataview'][$rand]['circle_content.table_name'] = $table_name;
-			    $cache['dataview'][$rand]['circle_content.entry_id'] = $entry_id;
+			    $cache['dataview'][$rand]['circle_content.content_id'] = $by['content_id'];
 
 	    	} elseif($by['site_id']){ //... by site_id
 
@@ -38,12 +39,12 @@
 
 		    if(!$response = existingCache($db, $cache)){
 
-	    		if($by['table_name'] && $by['entry_id']){ //Get circles by content
+	    		if($by['content_id']){ //Get circles by content
 
 		            $sql = 	  "SELECT content_circle.*, content_circle.id AS content_circle_id ".
 		        			  "FROM content_circle, circle WHERE ".
 
-		                      "content_circle.table_name = '{$table_name}' AND content_circle.entry_id = '{$entry_id}' AND ".
+		                      "content_circle.content_id = '{$by['content_id']}' AND ".
 		                      "content_circle.circle_id = circle.id AND ".
 		                      "circle.removed = 0 AND content_circle.removed = 0";
 
@@ -53,28 +54,28 @@
 		        			  "FROM site_circle, circle WHERE ".
 
 		                      "site_circle.site_id = '{$by['site_id']}' AND ".
-		                      "site_circle.circle_id = circle.id AND ".
+		                      "site_circle.circle_id = circle.id AND ".		                
 		                      "circle.removed = 0 AND site_circle.removed = 0";
 
 		        } elseif($by['user_id']){ //... by user_id
-		        	$sql = "SELECT circle.*, circle.id AS circle_id FROM circle, circle_commoner WHERE ".
+
+		        	$sql = "SELECT circle_commoner.*, circle_commoner.id AS circle_commoner_id FROM circle, circle_commoner WHERE ".
 			                      "circle_commoner.user_id = '{$by['user_id']}' AND ".
 			                      "circle_commoner.removed = 0 AND circle.removed = 0";
 
-		        } else { //... by circle_id's
-		        	$sql = "SELECT circle.*, circle.id AS circle_id FROM circle WHERE ".
-			                      "id = '".implode(" OR id = '", $by)."'".
-			                      "circle.removed = 0";
 		        }
 
 		      	$result = mysqli_query($db, $sql);
-		      	while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+		      	while($response = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
 		      		//get circle info, commoners, privileges & translations
-					if($circle = getCircle($db, $row['circle_id'], $by['user_id'], true)){
-				    	$cache['dataview'] = array_merge($cache['dataview'], $circle['cache']['dataview']);
+					if($circle = getCircle($db, $row['circle_id'], $get_privileges_user_id)){
+						if(!$get_privileges_user_id){
+				    		$cache['dataview'] = array_merge($cache['dataview'], $circle['cache']['dataview']);
+						}
 				    	unset($circle['cache']);
-				    	$response[$circle['circle_id']] = $circle;
+				    	//$response[$circle[$circle_id]] = 
+				    	$response[$circle['circle_id']]['circle'] = $circle;
 				    	$response[$circle['circle_id']]['status_code'] = '200';
 				    } else {
 				    	$response[$circle['circle_id']]['status_code'] = '400';
@@ -94,7 +95,7 @@
 	    }
   	}
 
-	function getCircle($db, $circle_id, $check_privileges_user_id = false, $parent_cache = false){
+	function getCircle($db, $circle_id, $get_privileges_user_id = false, $parent_cache = false){
 
 		$user_id = $GLOBALS['user_id'];
 
@@ -118,7 +119,7 @@
 		    	if($response['circle_id']){
 			    	//Commoners
 			    	if($privileges_user_id){
-				    	$response['commoners'] = getCommoners($db, $circle_id, $check_privileges_user_id, true);
+				    	$response['commoners'] = getCommoners($db, $circle_id, $get_privileges_user_id, true);
 			    	} else {
 				    	$response['commoners'] = getCommoners($db, $circle_id, false, true);
 
@@ -176,30 +177,6 @@
 			return $response;
 		} 
 	}
-
-	function maxPrivilegesUser($db, $content_circles, $commoner_circles){
-		//[firestarter - an influence sent through vibes of a song at a moment ()] - a sunny way to comment the API and perhaps, update database structure
-		//waiting for the next line to introduce changes - (try ethereum?) - 
-		//Capitalized characters could be used to gamify typing with ["medium":"telepathic"] gesture entanglement meteors.
-		//coding as a way to see/define commoners included in a circle. 
-		//i am curious whose feature request this would be
-		//
-		foreach($commoner_circles AS $commoner_circle){
-			if(is_array($content_circles[$privileges['circle_id']])){
-
-				$privileges['read'] = ($commoner_circle['circle_id']['privilege_read'] != NULL)
-				$privileges['create'] = ($commoner_circle['circle_id'][])
-
-				if($privileges['']['']){
-
-				}
-				$response[
-				decypher: circles -> cira
-			}
-		}
-	}
-
-	//Privileges hierarchy: Content > Commoner (NULL defaults to circle) > Circle
 
   	function addContentToCircles($db, $table_name, $entry_id, $circles){
   		

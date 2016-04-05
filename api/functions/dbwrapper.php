@@ -11,32 +11,45 @@
 	 	return $db;
 	}
 
-  //Insert / update localized content
-    function addContent($db, $language_id, $table_name, $entry_id, $content){
+  //Insert / update localized block
+    function addBlock($db, $language_id, $table_name, $entry_id, $block, $circles = null){
 
       $user_id = $GLOBALS['user_id'];
 
-      if(is_array($content) && is_array($circle)){
+      if(is_array($block) && is_array($circle)){
 
-	    if($entry_id == 'new'){
+	    /*if($entry_id == 'new'){
 	    	$entry_id = '%new_entry_id%';
-	    }
 
-	    //Content privileges (using circles)
-	    $privileges = getCirclesBy($db, array('table_name' => $table_name, 'entry_id' => $entry_id, true);
+		    //block circles, commoners and privileges
+		    $contentCircles = getCirclesBy($db, array('content_id' => $content_id), $user_id);
+		    $cache['dataview'] = array_merge($cache['dataview'], $contentCircles['cache']['dataview']);
+	    } else {
+	    	$content_id = getContentId($db, $table_name, $entry_id);
+
+		    //block privileges
+		    $privilegesContent = getContentPrivileges($db, $content_id);
+		    $cache['dataview'] = array_merge($cache['dataview'], $privilegesContent['cache']['dataview']);
+
+		    //block circles, commoners and privileges
+		    $contentCircles = getCirclesBy($db, array('content_id' => $content_id), $user_id);
+		    $cache['dataview'] = array_merge($cache['dataview'], $contentCircles['cache']['dataview']);
+	    }*/
 
 	    if(($entry_id == '%new_entry_id%') || (is_numeric($entry_id) && ($privileges['max_privilege_update'] || $privileges['max_privilege_create']))){
 
 	      	//Construct multilingual entry SQL		
-				$sql_content = "INSERT INTO content (user_id, language_id, table_name, entry_id, field, time, content) VALUES ";	
+				$sql_content = "INSERT INTO content_field (user_id, language_id, circle_id, field, time_updated, block) VALUES ";	
 
-		        foreach($content AS $field => $value){
+		        foreach($block AS $field => $value){
 		       		if($value != false){
+
+		       			$time = time();
 
 		       			if(is_integer($value) === false && is_float($value) === false){
 				          	$sql_content_row[] = 		"('$user_id', ".
 					                        			"'$language_id', ".
-					                        			"'".time()."', ".
+					                        			"'$time', ".
 					                        			"'$table_name', ".
 					                        			"'$entry_id', ".
 					                        			"'$field', ".
@@ -77,18 +90,18 @@
 		    mysqli_query($db, $sql_content);
 
 		    if($language_id != $GLOBALS['default_language_id']){ //!!! is not yet translated by hand
-		    	$GLOBALS['translation_queue'][] = array('table_name' => $table, 'entry_id' => $entry_id, 'content' => $content);
+		    	$GLOBALS['translation_queue'][] = array('table_name' => $table, 'entry_id' => $entry_id, 'block' => $block);
 		    }
 
 		    //unsync cache setup - all changed tables and corresponding ids
 	 		$cache["{$table_name}.{$table_name}_id"] = $entry_id;
 		    $rand = mt_rand();
-	 		$cache[$rand]['content.table_name'] = $table_name;
-	 		$cache[$rand]['content.entry_id'] = $entry_id;
+	 		$cache[$rand]['block.table_name'] = $table_name;
+	 		$cache[$rand]['block.entry_id'] = $entry_id;
 		    outdateCache($db, $cache);
 
 		    if($entry_id == '%new_entry_id%'){
-		    	$response = getContent($db, $user, $table_name, $entry_id);
+		    	$response = getBlock($db, $user, $table_name, $entry_id);
 		    }
 
 		    return $response;
@@ -98,47 +111,60 @@
       }
     }
 
-  //Translate content from language to language with Google translate - use latest entry by default, or chosen entry
+  //Translate block from language to language with Google translate - use latest entry by default, or chosen entry
     //function googleTranslateContent($db, $user, $language_id, )
 
-    function getContent($db, $table_name, $entry_id, $history = false, $parent_cache = false){
+    function getBlock($db, $table_name, $entry_id, $availablePrivileges = null, $history = false, $parent_cache = false){
 
     	$user_id = $GLOBALS['user_id'];
 	    if(!$history){
 	    	$history = '0,12';
 		    $add_sql = " ORDER BY time DESC LIMIT $history";
 	    }
+ 		
+ 		$cache['route'] == __FUNCTION__;
+  		$block = getContentTable($db, $table_name, $entry_id, true);
+ 		$content_id = $block['id'];
+ 			$cache = $block['cache'];
+ 			unset($block['cache']);
 
-    	//Setup & check cache
-	    	$cache['route'] = cacheSetRoute(__FUNCTION__, $args);
- 		    $cache['dataview']["{$table_name}.{$table_name}_id"] = $entry_id;
- 		    $rand = mt_rand();
- 		    $cache['dataview'][$rand]['content.table_name'] = $table_name;
- 		    $cache['dataview'][$rand]['content.entry_id'] = $entry_id;
+	    //block privileges
+	    $privilegesContent = getContentPrivileges($db, $content_id);
+	    $cache['dataview'] = array_merge($cache['dataview'], $privilegesContent['cache']['dataview']);
 
-	    //Content privileges (using circles)
-	    $privileges = getContentPrivileges($db, $user_id, $table_name, $entry_id, true);
+	    //block circles, commoners and privileges
+	    $contentCircles = getCirclesBy($db, array('content_id' => $content_id), $user_id); //user specific block caching disabled
+
+	    //User's privileges with this block
+ 		$author = null;
+ 		if($block['user_id'] = $user_id){
+ 			$author = $user_id;
+ 		}
+	    $privileges = availablePrivileges($db, $user_id, $privilegesContent, $contentCircles, $author);
 
 	    if($privileges['privilege_read']){
 
- 			if(!$response = existingCache()){
+ 			if(!$response = existingCache($db, $cache)){
 
-			  	//Get selected table
-				$sql = "SELECT *, *.id AS {$table_name}_id FROM '{$table_name}' WHERE id = '{$entry_id}' AND removed = 0";
-			    $result = mysqli_query($db, $sql);
+ 			    	$response = $block;
 
-				if($response = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+			    	$response['reflections'] = getReflections($db, array('content_id' => $content_id), true);
+	    			$cache['dataview'] = array_merge($cache['dataview'], $privilegesContent['cache']['dataview']);
+			    	$response['values'] = getValues($db, array('content_id' => $content_id), true);
+	    			$cache['dataview'] = array_merge($cache['dataview'], $privilegesContent['cache']['dataview']);
+			    	$response['keywords'] = getKeywords($db, array('content_id' => $content_id), true);
+	    			$cache['dataview'] = array_merge($cache['dataview'], $privilegesContent['cache']['dataview']);
 
-			  	  	//Translations count
-				    $sql = "SELECT COUNT(id) as count, language_id FROM content WHERE table_name = '$table_name' AND entry_id = '$entry_id' GROUP BY language_id";
+			  	  	//Iterations in a branch / language
+				    $sql = "SELECT COUNT(id) as count, language_id FROM content_branch WHERE content_id = '{$content_id}' GROUP BY language_id"; //branch?
 				    $result = mysqli_query($db, $sql);
 				    while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
 				      //Count history count within a translation
 				    	$response[$GLOBALS['languages'][$row['language_id']]['code']]['count'] = $row['count'];
 
-				      //Get multilingual content & history
-					    $sql = "SELECT id, user_id, time, content, googletranslate FROM content WHERE language_id = '{$row['language_id']}' AND table_name = '$table_name' AND entry_id = '$entry_id'".$add_sql;
+				      //Get multilingual block & history
+					    $sql = "SELECT id, user_id, time, block, googletranslate FROM block WHERE language_id = '{$row['language_id']}' AND table_name = '$table_name' AND entry_id = '$entry_id'".$add_sql;
 					    $result_translation = mysqli_query($db, $sql);
 					    $i = 0;
 				        while($row_translation = mysqli_fetch_array($result_translation, MYSQLI_ASSOC)){
@@ -148,10 +174,6 @@
 				          	$response[$GLOBALS['languages'][$row['language_id']]['code']][$row_translation['field']]['history'][$i] = $row_translation;
 				        }
 				    }
-
-				    //Reflections, values as response to content (can go also with circles)
-				    	getReflections($db, $user_id, $table_name, $entry_id);
-				    	getValues($db, $user_id, $table_name, $entry_id);
 
 				    if($parent_cache == false){
 					    $cache['object'] = $response;
@@ -171,15 +193,37 @@
 		}
     }
 
-  	function getContentPrivileges($db, $user_id, $table_name, $entry_id, $parent_cache = false){
+    function getContentTable($db, $table_name, $entry_id){
 
   		if($user_id && $table_name && $entry_id){
 
-  	    	$cache['route'] = cacheSetRoute(__FUNCTION__, $args);
- 		    $rand = mt_rand();
- 		    $cache['dataview'][$rand]['content.table_name'] = $table_name;
- 		    $cache['dataview'][$rand]['content.entry_id'] = $entry_id;
+     		$cache['route'] = cacheSetRoute(__FUNCTION__, func_get_args());
+	    	$cache['dataview']['{$table_name}.{table_name}_id'] = $entry_id;
+	    	$rand = mt_rand();
+	    	$cache['dataview'][$rand]['block.table_name'] = $table_name;
+	    	$cache['dataview'][$rand]['block.entry_id'] = $entry_id;
 
+ 		    $sql = "SELECT block.id, block.id, AS content_id, {$table}.user_id FROM block, {$table_name} WHERE ".
+ 		    	   "block.table_name = '{$table_name}' AND block.entry_id = '{$entry_id}' AND ".
+ 		    	   "{$table}.id = '{$entry_id}' AND {$table}.removed = 0";
+			$result = mysqli_query($db, $sql);
+ 		    $response = mysqli_fetch_array($result, MYSQLI_ASSOC));
+
+			$response['cache'] = $cache;
+  		}
+  		return $response;
+    }
+
+  	function getContentPrivileges($db, $content_id){
+
+  		if($content_id){
+ 			$cache['dataview']['content_privileges.content_id'] = $content_id;
+
+  			$sql = "SELECT * FROM content_privilege WHERE content_id = '{$content_id}'";
+			$result = mysqli_query($db, $sql);
+ 		    $response = mysqli_fetch_array($result, MYSQLI_ASSOC));
+
+			$response['cache'] = $cache;
   		}
   		return $response;
   	}
@@ -190,13 +234,17 @@
 
       if($array['language_id'] != $GLOBALS['default_language_id']){
 
-        foreach($array['content'] AS $key => $value){
+        foreach($array['block'] AS $key => $value){
           if($value !== false && is_numeric($value) === false){
             $sql_update[] = "$key = '".translate($value, $GLOBALS['languages'][$array['language_id']]['code'], $GLOBALS['languages'][$GLOBALS['default_language_id']]['code'])."'";
           }
         }
         $sql_update = "UPDATE $table SET ".implode(', ', $sql_update)." WHERE id = '{$array['table_id']}'";
       }
+    }
+
+    function getKeywords($db, $content_id){
+
     }
 
   //Get existing cache record
