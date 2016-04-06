@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 05, 2016 at 11:10 PM
+-- Generation Time: Apr 06, 2016 at 05:29 PM
 -- Server version: 5.6.24
 -- PHP Version: 5.6.8
 
@@ -23,15 +23,33 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `block`
+--
+
+CREATE TABLE IF NOT EXISTS `block` (
+  `id` int(11) unsigned NOT NULL,
+  `user_id` int(11) unsigned NOT NULL,
+  `hash` varchar(64) NOT NULL,
+  `timestamp` int(11) unsigned NOT NULL,
+  `time` float unsigned NOT NULL,
+  `transaction` text NOT NULL,
+  `dataview` text NOT NULL,
+  `statehash` varchar(32) NOT NULL,
+  `previous_block_hash` varchar(64) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `cache`
 --
 
 CREATE TABLE IF NOT EXISTS `cache` (
   `id` int(11) unsigned NOT NULL,
   `time` int(11) unsigned NOT NULL,
-  `route` varchar(64) CHARACTER SET utf8 NOT NULL,
+  `transaction` text CHARACTER SET utf8 NOT NULL,
   `dataview` varchar(256) CHARACTER SET utf8 NOT NULL,
-  `json_object` text CHARACTER SET utf8 NOT NULL,
+  `state` text CHARACTER SET utf8 NOT NULL,
   `unsynchronized` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -120,6 +138,21 @@ CREATE TABLE IF NOT EXISTS `content` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `content_branch`
+--
+
+CREATE TABLE IF NOT EXISTS `content_branch` (
+  `id` int(11) unsigned NOT NULL,
+  `user_id` int(11) unsigned NOT NULL,
+  `content_id` int(11) unsigned NOT NULL,
+  `branch` varchar(32) NOT NULL,
+  `language_id` int(11) unsigned NOT NULL,
+  `time` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `content_circle`
 --
 
@@ -127,28 +160,10 @@ CREATE TABLE IF NOT EXISTS `content_circle` (
   `id` int(11) unsigned NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
   `circle_id` int(11) unsigned NOT NULL,
-  `content_id` int(11) unsigned NOT NULL,
+  `branch_id` int(11) unsigned NOT NULL,
   `time` int(11) unsigned NOT NULL,
   `removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `content_field`
---
-
-CREATE TABLE IF NOT EXISTS `content_field` (
-  `id` int(11) unsigned NOT NULL,
-  `content_id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `language_id` int(11) unsigned NOT NULL,
-  `googletranslate` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `time` int(11) unsigned NOT NULL,
-  `field` varchar(32) CHARACTER SET utf8 NOT NULL,
-  `content` text CHARACTER SET utf8 NOT NULL,
-  `patch` text CHARACTER SET utf8 NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -158,8 +173,8 @@ CREATE TABLE IF NOT EXISTS `content_field` (
 
 CREATE TABLE IF NOT EXISTS `content_keyword` (
   `id` int(11) unsigned NOT NULL,
-  `table_name` varchar(24) NOT NULL,
-  `entry_id` int(11) unsigned NOT NULL,
+  `block_vector_id` int(11) NOT NULL,
+  `iteration_id` int(11) unsigned NOT NULL,
   `keyword_id` int(11) unsigned NOT NULL,
   `frequency` float unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -173,6 +188,7 @@ CREATE TABLE IF NOT EXISTS `content_keyword` (
 CREATE TABLE IF NOT EXISTS `content_media` (
   `id` int(11) unsigned NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
+  `block_state_id` int(11) unsigned NOT NULL,
   `time` int(11) unsigned NOT NULL,
   `url` varchar(256) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -209,6 +225,24 @@ CREATE TABLE IF NOT EXISTS `content_reflection` (
   `time_updated` int(11) unsigned NOT NULL,
   `reflection` text CHARACTER SET utf8 NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `content_translation`
+--
+
+CREATE TABLE IF NOT EXISTS `content_translation` (
+  `id` int(11) unsigned NOT NULL,
+  `version_id` int(11) unsigned NOT NULL,
+  `user_id` int(11) unsigned NOT NULL,
+  `language_id` int(11) unsigned NOT NULL,
+  `googletranslated` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `time_updated` int(11) unsigned NOT NULL,
+  `field` varchar(32) CHARACTER SET utf8 NOT NULL,
+  `content` text CHARACTER SET utf8 NOT NULL,
+  `patch` text CHARACTER SET utf8 NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -250,21 +284,6 @@ CREATE TABLE IF NOT EXISTS `language` (
   `code` varchar(10) CHARACTER SET utf8 NOT NULL,
   `googletranslate` tinyint(1) DEFAULT '0'
 ) ENGINE=InnoDB AUTO_INCREMENT=93 DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `log`
---
-
-CREATE TABLE IF NOT EXISTS `log` (
-  `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `site_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
-  `route` varchar(32) CHARACTER SET utf8 NOT NULL,
-  `log` text CHARACTER SET utf8 NOT NULL
-) ENGINE=MyISAM AUTO_INCREMENT=115 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -386,7 +405,7 @@ CREATE TABLE IF NOT EXISTS `site_language` (
   `field` varchar(64) CHARACTER SET utf8 NOT NULL,
   `variant` varchar(32) CHARACTER SET utf8 NOT NULL,
   `content` varchar(256) CHARACTER SET utf8 NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -434,7 +453,7 @@ CREATE TABLE IF NOT EXISTS `user_language` (
   `id` int(11) unsigned NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
   `language_id` int(11) unsigned NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -462,6 +481,21 @@ CREATE TABLE IF NOT EXISTS `user_message` (
 CREATE TABLE IF NOT EXISTS `_gesture` (
   `id` int(11) NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `_log`
+--
+
+CREATE TABLE IF NOT EXISTS `_log` (
+  `id` int(11) unsigned NOT NULL,
+  `user_id` int(11) unsigned NOT NULL,
+  `site_id` int(11) unsigned NOT NULL,
+  `time` int(11) unsigned NOT NULL,
+  `route` varchar(32) CHARACTER SET utf8 NOT NULL,
+  `log` text CHARACTER SET utf8 NOT NULL
+) ENGINE=MyISAM AUTO_INCREMENT=115 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
@@ -534,10 +568,10 @@ CREATE TABLE IF NOT EXISTS `_report` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `_site_block`
+-- Table structure for table `_site_content`
 --
 
-CREATE TABLE IF NOT EXISTS `_site_block` (
+CREATE TABLE IF NOT EXISTS `_site_content` (
   `id` int(11) unsigned NOT NULL,
   `site_id` int(11) unsigned NOT NULL,
   `url` varchar(128) CHARACTER SET utf8 NOT NULL,
@@ -565,10 +599,10 @@ CREATE TABLE IF NOT EXISTS `_wormhole` (
 --
 
 --
--- Indexes for table `cache`
+-- Indexes for table `block`
 --
-ALTER TABLE `cache`
-  ADD PRIMARY KEY (`id`), ADD KEY `structure` (`dataview`);
+ALTER TABLE `block`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `circle`
@@ -595,16 +629,16 @@ ALTER TABLE `content`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `content_branch`
+--
+ALTER TABLE `content_branch`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `content_circle`
 --
 ALTER TABLE `content_circle`
   ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `content_field`
---
-ALTER TABLE `content_field`
-  ADD PRIMARY KEY (`id`), ADD KEY `language_id` (`language_id`), ADD KEY `field` (`field`);
 
 --
 -- Indexes for table `content_keyword`
@@ -631,6 +665,12 @@ ALTER TABLE `content_reflection`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `content_translation`
+--
+ALTER TABLE `content_translation`
+  ADD PRIMARY KEY (`id`), ADD KEY `language_id` (`language_id`), ADD KEY `field` (`field`);
+
+--
 -- Indexes for table `content_value`
 --
 ALTER TABLE `content_value`
@@ -646,12 +686,6 @@ ALTER TABLE `keyword`
 -- Indexes for table `language`
 --
 ALTER TABLE `language`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `log`
---
-ALTER TABLE `log`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -727,6 +761,12 @@ ALTER TABLE `user_message`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `_log`
+--
+ALTER TABLE `_log`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `_meteor`
 --
 ALTER TABLE `_meteor`
@@ -751,9 +791,9 @@ ALTER TABLE `_report`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `_site_block`
+-- Indexes for table `_site_content`
 --
-ALTER TABLE `_site_block`
+ALTER TABLE `_site_content`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -767,9 +807,9 @@ ALTER TABLE `_wormhole`
 --
 
 --
--- AUTO_INCREMENT for table `cache`
+-- AUTO_INCREMENT for table `block`
 --
-ALTER TABLE `cache`
+ALTER TABLE `block`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `circle`
@@ -792,14 +832,14 @@ ALTER TABLE `circle_type`
 ALTER TABLE `content`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
+-- AUTO_INCREMENT for table `content_branch`
+--
+ALTER TABLE `content_branch`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
 -- AUTO_INCREMENT for table `content_circle`
 --
 ALTER TABLE `content_circle`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `content_field`
---
-ALTER TABLE `content_field`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `content_keyword`
@@ -822,6 +862,11 @@ ALTER TABLE `content_privilege`
 ALTER TABLE `content_reflection`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
+-- AUTO_INCREMENT for table `content_translation`
+--
+ALTER TABLE `content_translation`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
 -- AUTO_INCREMENT for table `content_value`
 --
 ALTER TABLE `content_value`
@@ -836,11 +881,6 @@ ALTER TABLE `keyword`
 --
 ALTER TABLE `language`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=93;
---
--- AUTO_INCREMENT for table `log`
---
-ALTER TABLE `log`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=115;
 --
 -- AUTO_INCREMENT for table `place`
 --
@@ -880,7 +920,7 @@ ALTER TABLE `site_circle`
 -- AUTO_INCREMENT for table `site_language`
 --
 ALTER TABLE `site_language`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=34;
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=33;
 --
 -- AUTO_INCREMENT for table `sphere`
 --
@@ -895,12 +935,17 @@ ALTER TABLE `user`
 -- AUTO_INCREMENT for table `user_language`
 --
 ALTER TABLE `user_language`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `user_message`
 --
 ALTER TABLE `user_message`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `_log`
+--
+ALTER TABLE `_log`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=115;
 --
 -- AUTO_INCREMENT for table `_meteor`
 --
@@ -922,9 +967,9 @@ ALTER TABLE `_project_sphere`
 ALTER TABLE `_report`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT for table `_site_block`
+-- AUTO_INCREMENT for table `_site_content`
 --
-ALTER TABLE `_site_block`
+ALTER TABLE `_site_content`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `_wormhole`
