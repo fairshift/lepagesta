@@ -15,30 +15,37 @@
 
 	//Idea: Reflections from current circle could be complementing privileges in circles - showcasing implicit rules of engagement with appreciated gestures
 
- 	function getCirclesBy($by, $get_privileges_user_id = false, $return_cache = false){
+ 	function getCirclesBy(){
 
  		$db = $GLOBALS['db'];
 		$user_id = $GLOBALS['user_id'];
 
-	    if($user_id){
+        $input = renderInput(func_get_args());
 
-	    	if($by['content_id']){ //Caching by content
+        $input['by'] = 						(!isset($input['by'])) ? null : $input['by'];
+        $input['get_privileges_user_id'] =  (!isset($input['get_privileges_user_id'])) ? null : $input['get_privileges_user_id'];
 
-	    		$cache['route'] = cacheSetRoute(__FUNCTION__, func_get_args());
-		    	$rand = mt_rand();
-			    $cache['dataview'][$rand]['circle_content.content_id'] = $by['content_id'];
+        $block = 							(!isset($input['block'])) ? null : $input['block'];
+    	$block['time'] = 					(!$input['block']) ? microtime() : $input['block']['time'];
+    	$block['transaction'] = 			(!$input['block']) ? formatTransaction(__FUNCTION__, $input) : $input['block']['transaction'];
 
-	    	} elseif($by['site_id']){ //... by site_id
+	    if($user_id && $input['by']){
 
-	    		$cache['route'] = cacheSetRoute(__FUNCTION__, func_get_args());
-	    		$cache['dataview']['site_circle.site_id'] = $by['site_id'];
-	    	} elseif($by['user_id']){
-	    		$cache['route'] = cacheSetRoute(__FUNCTION__, func_get_args());
-	    		$cache['dataview']['circle_commoner.user_id'] = $by['user_id'];
+	    	if($input['by']['content_id']){ //Caching by content
+
+			    $block['dataview']['circle_content.content_id'] = $by['content_id'];
+
+	    	} elseif($input['by']['site_id']){ //... by site_id
+
+	    		$block['dataview']['site_circle.site_id'] = $by['site_id'];
+
+	    	} elseif($input['by']['user_id']){
+
+	    		$block['dataview']['circle_commoner.user_id'] = $by['user_id'];
 	    	}
-	    	//... by circle_id's cache isn't set (as it's assumed to  too unfrequent)
+	    	//... by circle_id's cache isn't set (as it's assumed to be too unfrequent)
 
-		    if(!$response = existingCache($db, $cache)){
+		    if(!$response = existingCacheBlock($db, $cache)){
 
 	    		if($by['content_id']){ //Get circles by content
 

@@ -1,6 +1,6 @@
 <?php
 
-	$GLOBALS['privileges'] = array('read', 'join', 'invite', 'encircle', 'reflect', 'value', 'edit', 'manage');
+	$GLOBALS['privileges'] = array('read', 'join', 'invite', 'encircle', 'reflect', 'value', 'branch', 'edit', 'manage');
 
 	//Privileges hierarchy: Author > Commoner (NULL defaults to whichever the greater influence from Content's & Circle's privileges is)
 	function availablePrivileges($db, $user_id, $content_privileges, $content_circles, $author = null){

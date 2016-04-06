@@ -122,27 +122,31 @@
 
         $input = renderInput(func_get_args());
 
-        $input['table_name'] = 				(!isset($input['table_name'])) ? null : $input['table_name'];
-        $input['entry_id'] = 				(!isset($input['entry_id'])) ? null : $input['entry_id'];
+        $input['branch_id'] = 				(!$input['branch_id']) ? null : $input['branch_id']; //optional
 
         //$input['availablePrivileges'] = 	(!isset($input['availablePrivileges'])) ? null : $input['availablePrivileges'];
-        $input['history'] = 				(!isset($input['history'])) ? '0,12' : $input['history'];
+        $input['history'] = 				(!$input['history']) ? '0,12' : $input['history'];
 
-        $block = 							(!isset($input['block'])) ? null : $input['block'];
+        $block = 							(!$input['block']) ? null : $input['block'];
     	$block['time'] = 					(!$input['block']) ? microtime() : $input['block']['time'];
-    	$block['transaction'] = 			(!$input['block']) ? formatTransaction(__FUNCTION__, $input) : $input['bock']['transaction'];
+    	$block['transaction'] = 			(!$input['block']) ? formatTransaction(__FUNCTION__, $input) : $input['block']['transaction'];
+    	$block['state'] = 					(!$input['block']['state']) ? null : $input['block']['state'];
 
-    //Start code
     	if($user_id && $input['table_name'] && $input['entry_id']){
-	  		$content = getContentTable($input, array('block', $block);
-	 		$input['content_id'] = $content['id'];
-			$block = $content['block'];
-			unset($content['block']);
+
+    		if(!$response = existingCacheBlock($db, $block)){
+
+    		$buffer['state']['getContentTable'] = '%';
+	  		$buffer = getContentTable($input, array('block' => $buffer));
+
+	  		$input['content_id'] = $buffer['state']['getContentTable']['content_id'];
+ 			$buffer['state']['getContentBranches'] = '%';
+	  		$buffer = getContentBranch($input, array('block' => $buffer));
 
 		    //Content privileges
-		    $privilegesContent = getContentPrivileges($input, array('block' => $block));
-		    $block = $privilegesContent['block'];
-		    unset($privilegesContent['block']);
+		    $privilegesContent = 
+		    	$block = $privilegesContent['block'];
+		    	unset($privilegesContent['block']);
 
 		    //Content circles, commoners and privileges
 		    $input['user_id'] = $user_id;
@@ -162,13 +166,16 @@
 	 			    	$response = $content;
 
 				    	$response['reflections'] = getReflections($input, array('block' => $block));
-		    			$block['dataview'] = mergeBlocks($block['dataview'], $response['reflections']);
+					    $block = $response['reflections']['block'];
+					    unset($response['block']);
 
 				    	$response['values'] = getValues($input, array('block' => $block));
-		    			$block['dataview'] = mergeBlocks($block['dataview'], $response['values']);
+		    			$block = $response['values']['block'];
+		    			unset($response['values']['block']);
 
 				    	$response['keywords'] = getKeywords($input, array('block' => $block));
-		    			$block['dataview'] = mergeBlocks($block['dataview'], $privilegesContent['block']['dataview']);
+				    	$block = $response['keywords']['block'];
+		    			unset($response['keywords']['block']);
 
 				  	  	//Iterations count
 					    $sql = "SELECT COUNT(id) as count, language_id FROM content_branch WHERE content_id = '{$content_id}' GROUP BY language_id"; //branch?
@@ -190,13 +197,11 @@
 					        }
 					    }
 
-				   	} else {
-				   		return false;
 				   	}
 				}
 			}
 
-		    if($merging_block == null){
+		    if($response){
 			    $block['state'] = $response;
 			    newCacheBlock($block);
 			    unset($block['state']);
@@ -218,19 +223,23 @@
     	//table_name, entry_id
       	$input = renderInput(func_get_args());
 
-  		if($user_id && $table_name && $entry_id){
+  		if($user_id && $input['table_name'] && $input['entry_id']){
 
-     		$block['transaction'] = blockFormatTransaction(__FUNCTION__, array_values(func_get_args()));
-	    	$block['dataview']['{$table_name}.{table_name}_id'] = $entry_id;
-	    	$rand = mt_rand();
-	    	$block['dataview'][$rand]['content.table_name'] = $table_name;
-	    	$block['dataview'][$rand]['content.entry_id'] = $entry_id;
+	        $block = 							(!isset($input['block'])) ? null : $input['block'];
+	    	$block['time'] = 					(!$input['block']) ? microtime() : $input['block']['time'];
+	    	$block['transaction'] = 			(!$input['block']) ? formatTransaction(__FUNCTION__, $input) : $input['block']['transaction'];
 
  		    $sql = "SELECT content.id, content.id, AS content_id, {$table}.user_id FROM content, {$table_name} WHERE ".
  		    	   "content.table_name = '{$table_name}' AND content.entry_id = '{$entry_id}' AND ".
  		    	   "{$table}.id = '{$entry_id}' AND {$table}.removed = 0";
+
 			$result = mysqli_query($db, $sql);
- 		    $response = mysqli_fetch_array($result, MYSQLI_ASSOC));
+ 		    if($response = mysqli_fetch_array($result, MYSQLI_ASSOC))){
+				$block['dataview']['{$input['table_name']}.{$input['table_name']}_id'] = $input['entry_id'];
+		    	$rand = mt_rand();
+		    	$block['dataview'][$rand]['content.table_name'] = $table_name;
+		    	$block['dataview'][$rand]['content.entry_id'] = $entry_id;
+			}
 
 			$response['block'] = $block;
   		}
