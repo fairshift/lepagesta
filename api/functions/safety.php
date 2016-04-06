@@ -94,6 +94,12 @@ function input( $name, $data_type, $required_length, $max_length = "" ){
 	}
 }
 
+//To enable loggable function inputs more easily...
+function renderInput($args){
+	$args = ksort(array_values($args));
+	return array_values($args);
+}
+
 function backupDB($db){
 
 	$tables = '*';

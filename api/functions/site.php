@@ -1,6 +1,6 @@
 <?php
 
-function getSite($db, $url){
+function getSite($url){
 	if($GLOBALS['user']['id']){
 		$sql = "SELECT *, site.id AS site_id FROM site WHERE url = '$url' AND removed = 0";
 	    $result = mysqli_query($db, $sql);

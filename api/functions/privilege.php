@@ -6,8 +6,6 @@
 	function availablePrivileges($db, $user_id, $content_privileges, $content_circles, $author = null){
 		//[firestarter - an influence sent through vibes of a song at one moment]
 
-		//Clash: circle privileges & content privileges as set by author
-
 		foreach($GLOBALS['privileges'] AS $privilege){
 
 			if($author && $privilege == 'read', 'join', ){
@@ -29,6 +27,11 @@
 											$commoner_
 											(if($commoner['circle_id'] )
 					$privileges['create'] = ($commoner_circle['circle_id'][] != NULL) ? 
+
+					//relevancy supplied by linking:
+						//function: 
+						//relevant example: 
+							//
 
 					if($privileges['']['']){
 

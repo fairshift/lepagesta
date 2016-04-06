@@ -1,12 +1,12 @@
 <?php
 
 //Automatic authentication & registration of anonymous account with every visit
-  function authenticate($db){
+  function authenticate($auth = false){
 
     $GLOBALS['newUser'] = false; //in case authentication code doesn't match, this triggers a new anonymous account (valid until cookie is available)
     $user_id = 0;
 
-    if(input( 'auth', 'md5', '32', '32' ) != 0){
+    if($auth){
 
       $user = getUser($db, $_GET['auth'], 'auth', array('auth'));
 
@@ -28,7 +28,7 @@
       }
     }
 
-    if((!input( 'auth', 'md5', '32', '32' ) || $GLOBALS['newUser'] == true)){
+    if(!$auth || $GLOBALS['newUser'] == true)){
 
       $auth = md5("LOL%I=ISUP".microtime());
       mysqli_query($db, 'INSERT INTO user (auth, last_visit) VALUES ('.
@@ -37,9 +37,6 @@
 
       $user = getUser($db, $auth, 'auth', array('auth'));
     }
-
-    //get user profile
-
 
     return $user;
   }

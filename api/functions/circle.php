@@ -15,8 +15,9 @@
 
 	//Idea: Reflections from current circle could be complementing privileges in circles - showcasing implicit rules of engagement with appreciated gestures
 
- 	function getCirclesBy($db, $by, $get_privileges_user_id = false, $parent_cache = false){
+ 	function getCirclesBy($by, $get_privileges_user_id = false, $return_cache = false){
 
+ 		$db = $GLOBALS['db'];
 		$user_id = $GLOBALS['user_id'];
 
 	    if($user_id){
@@ -82,7 +83,7 @@
 				    }
 		        }
 
-		        if($parent_cache == false){
+		        if($return_cache == false){
 				    $cache['object'] = $response;
 				    updateCache($cache);
 			    	unset($cache['object']);
@@ -95,8 +96,9 @@
 	    }
   	}
 
-	function getCircle($db, $circle_id, $get_privileges_user_id = false, $parent_cache = false){
+	function getCircle($circle_id, $get_privileges_user_id = false, $return_cache = false){
 
+ 		$db = $GLOBALS['db'];
 		$user_id = $GLOBALS['user_id'];
 
 		if($user_id && $circle_id){
@@ -126,7 +128,7 @@
 						$cache['dataview'] = array_merge($cache['dataview'], $response['commoners']['cache']['dataview']);
 						unset($response['commoners']['cache']);
 
-				        if($parent_cache == false){
+				        if($return_cache == false){
 						    $cache['object'] = $response;
 						    updateCache($cache);
 					    	unset($cache['object']);
@@ -139,7 +141,9 @@
 		}
 	}
 
-	function getCommoners($db, $circle_id, $check_privileges_user_id = false, $parent_cache = false){
+	function getCommoners($db, $circle_id, $check_privileges_user_id = false, $return_cache = false){
+
+ 		$db = $GLOBALS['db'];
 
 		if($user_id && $circle_id){
 
@@ -167,7 +171,7 @@
 		        	}
 				}
 
-		        if(!$parent_cache && !$privileges_user_id){
+		        if(!$return_cache && !$privileges_user_id){
 				    $cache['object'] = $response;
 				    updateCache($cache);
 			    	unset($cache['object']);
@@ -178,9 +182,10 @@
 		} 
 	}
 
-  	function addContentToCircles($db, $table_name, $entry_id, $circles){
+  	function addContentToCircles($table_name, $entry_id, $circles){
   		
-  		$user_id = $GLOBALS['user_id'];
+ 		$db = $GLOBALS['db'];
+  		/*$user_id = $GLOBALS['user_id'];
 
   		if($user_id){
 
@@ -191,6 +196,6 @@
 					$response[$circle_id]['status_code'] = '400';
 				}
   			}
-  		}
+  		}*/
   	}
 ?>
