@@ -29,7 +29,7 @@
 
   include('include.php');
   includeFunctions('dbwrapper.php'); //content add/update/get
-  includeFunctions('blockcache.php'); //metamorphosis of caching in this database with the blockchain concept 
+  includeFunctions('block.php'); //metamorphosis of caching in this database with the blockchain concept
   includeFunctions('vendor/merkle-tree/merkletree.php'); //data validation algorithm (currently not in use)
   includeFunctions('safety.php'); //keep interactions with API/DB safe
   $db = dbWrapper();
@@ -38,7 +38,7 @@
   session_start();
   if(input('call', 'string', 1, 32)){
     if(strpos($_REQUEST['call'], '-') > 0){
-      $buffer = explode("-", $_REQUEST['call']);
+      $buffer = explode("/", $_REQUEST['call']);
       $GLOBALS['o'] = $buffer[0]; //object
       $GLOBALS['f'] = $buffer[1]; //function
     } else {
@@ -96,8 +96,8 @@
 //Language
   $GLOBALS['languages'] = listLanguages($GLOBALS['user']['id']); //list all languages ('googletranslate' enabled?)
   $GLOBALS['default_language_id'] = $GLOBALS['languages']['en']['id']; //all data is envisioned to be translated into one default language for search capabilites
-  $GLOBALS['language_code'] = 'en'; //default site language is English
-  $GLOBALS['language_id'] = $GLOBALS['languages']['en']['id']; //language of current query - now set to english, soon to be reflecting the user's query
+  //$GLOBALS['language_code'] = 'en'; //default site language is English
+  $GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query - now set to english, soon to be reflecting the user's query
 
 //Site
   $GLOBALS['site_id'] = getSite($db, $GLOBALS['user']['id']);
@@ -110,7 +110,59 @@
 
 //Functions
 
-  switch($GLOBALS['o']){ //Route: object-function          <---
+  switch($GLOBALS['o']){ //Route: object/function   <---   data flow
+
+    case 'blog':
+      if($GLOBALS['f'] == 'add'){
+        if(!input('branch_id', 'integer', 1, 11)){
+
+          //Add new content
+          $blog['time']        = (input('time', 1, 11)) ? input('time', 1, 11) : time();
+        } else {
+
+          //Add content to current branch
+          $blog['branch_id']   = input('branch_id', 'integer', 1, 11);
+        }
+
+        $blog['user_id']       = $GLOBALS['user_id'];
+        $blog['title']         = input('title', 1, 64);
+        $blog['content']       = input('content', 'string', 1);
+        $blog['time_updated']  = (input('time', 1, 11)) ? input('time', 1, 11) : time();
+      }
+      if($GLOBALS['f'] == 'remove'){
+        if(input('content_id', 'integer', 1, 11)){
+          
+        }
+        if(input('branch_id', 'integer', 1, 11)){
+          
+        }
+        if(input('iteration_id', 'integer', 1, 11)){
+          
+        }
+      }
+      if($GLOBALS['f'] == 'fork'){
+        
+      }
+      if($GLOBALS['f'] == 'get'){
+        //get what's visible in current circle?
+        //getContent();
+      }
+      break;
+
+    case 'entityName': //user/content OR circle/content
+      if($GLOBALS['f'] == 'add'){
+        
+      }
+      if($GLOBALS['f'] == 'get'){
+        
+      }
+      break;
+
+    case '':
+      break;
+
+    case 'media':
+      break;
 
   //Intentions initiated, enacted in gestures - a fine blend of giving and receiving (offering, looking for)
     //# as key to codification of captured reflections social media, to fetch letters into blogchain rainbow spiral [{"topic": "impact of losing keys to data on future causes"}]
@@ -272,17 +324,14 @@
   //Update modified tables with default language translation
     if(isset($GLOBALS['translation_queue'])){
       foreach($GLOBALS['translation_queue'] AS $row){
-        call_user_func('translateToDefault', $row);
+        translateToDefault($row);
       }
     }
 
   //Cron job check
     //cron($db);
 
-  //Log
-    siteLog($db, $user, $GLOBALS['site_id'], $GLOBALS['log']);
-
-//This section is devoted to an example of a recent challenge to API/DB process/structure
+//This section is devoted to an example of a recent challenge to current order of API/DB process/structure
   /* 
    * Examplary public initiative to [{"measure changes", "join our efforts"}] in inspiration - getting a telepathic echo of...
         dis/entanglement to representive post on Facebook timeline with public / private / encryption of meaning with transformation

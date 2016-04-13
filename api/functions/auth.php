@@ -41,8 +41,8 @@
     return $user;
   }
 
-//Sign in / Register function
-  function passThrough($db, $user_id){
+//Sign in / Register / Confirm router
+  function passThrough($user_id){
 
     $continue = emailStatus($db, $user_id);
 
@@ -64,7 +64,7 @@
     return $response;
   }
 
-  function emailStatus($db, $user_id){
+  function emailStatus($user_id){
 
     if($user_id > 0 && filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL) == urldecode($_REQUEST['email'])){
 
@@ -82,7 +82,8 @@
     }
   }
 
-  function usernameExists($db, $user_id){
+  function usernameExists(){
+    $input = 
     if($user_id > 0 && input('username', 'string', '3')){
 
       $row = getUser($db, urldecode($_REQUEST['username']), 'username', array('auth'));
@@ -96,7 +97,7 @@
     }
   }
 
-  function registerPerson($db){
+  function registerPerson($fields){
 
     if(getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('auth')) == 0 
       && input('password', 'string', '6', '32') 
@@ -123,7 +124,7 @@
     }
   }
 
-  function confirmEmail($db, $user_id){
+  function confirmEmail($user_id){
 
     if($user_id > 0 && input('code', 'string', '32', '32')){
       $user = getUser($db, $_REQUEST['code'], 'email_confirmation_code', array('auth'));
@@ -140,7 +141,7 @@
     }
   }
 
-  function resendConfirmation($db, $user_id){
+  function resendConfirmation($user_id){
 
     $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('auth'));
 
@@ -150,7 +151,7 @@
     }
   }
 
-  function signinPerson($db, $user_id){
+  function signinPerson($user_id){
 
     $user = getUser($db, filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL), 'email', array('auth'));
 
@@ -168,7 +169,7 @@
   }
 
 //Account created anonymously gets merged into a registered account with this function
-  function mergeAccounts($db, $merging_user_id, $user_id){
+  function mergeAccounts($merging_user_id, $user_id){
 
     if($merging_user_id != $user_id){
       $result = mysqli_query($db, "SELECT id, email_confirmed FROM user WHERE id = '$user_id'");
@@ -190,11 +191,5 @@
     }
 
     return $response;
-  }
-
-//Get user privileges for a specific data block
-  function userPrivileges($db, $user_id, $table, $entry_id){
-
-    
   }
 ?>

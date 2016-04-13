@@ -1,7 +1,7 @@
 <?php
 
   //Language functions
-    function listLanguages($db, $user_id){
+    function listLanguages($user_id){
       if($user_id > 0){
 
         $sql = "SELECT * FROM language";
@@ -17,7 +17,10 @@
     }
 
   //Localized site text
-    function siteText($db, $user_id, $site_id){
+    function siteText(){
+
+      $user_id
+      $site_id
 
       if(input('code', 'string', '1', '10') && $user_id > 0 && $site_id > 0){
 
