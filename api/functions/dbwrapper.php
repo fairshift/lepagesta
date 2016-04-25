@@ -6,7 +6,7 @@
 		$db = mysqli_connect($account['host'], $account['database-user'], $account['database-password'], $account['database']) or die(mysqli_error());
 	 	mysqli_set_charset( $db , "utf8" );
 
-	 	$GLOBALS['db'] = $db; //input function needs this
+	 	$GLOBALS['db'] = $db; //functions need this
 
 	 	return $db;
 	}
@@ -15,421 +15,257 @@
     function addContent(){
 
  		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user_id'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
 
         $input = func_get_args();
 
-      //Function conditions
-        $route = $input['route'];
-        //Language of choice
-        	$route['language_id'] =				(!$route['language_id']) ? null : $route['language_id'];
-    	//Edit existing content
-    		//By content_id
- 			$route['content_id'] = 				(!$route['content_id']) ? null : $route['content_id'];
+        //Function router
+    	$route = $input['route']; 	//(content_id || table_name & entry_id), (branch_id || branch_title)
+    	$route['language_id'] = (!$route['language_id']) ? $GLOBALS['language_id'] : $route['language_id'];
 
- 			//By table_name & entry_id
- 			$route['table_name'] = 				(!$route['table_name']) ? null : $route['table_name'];
- 			$route['entry_id'] = 				(!$route['entry_id']) ? null : $route['entry_id'];
+		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
- 			//Add to current branch
-        	$route['branch_id'] = 				(!$route['branch_id']) ? null : $route['branch_id'];
+       	//Content to add
+        $content = $input['state'];
 
-        	//Fork the above branch_id
-        	$route['state_id'] = 				(!$route['state_id']) ? null : $route['state_id']; //Fork starts here
-        	$route['branch'] = 					(!$route['branch']) ? null : $route['branch']; //Branch name
+		//if($privileges['privilege_update'] || $privileges['privilege_create']))
+	    if($route['table_name']){
 
-        //Content fields
-        	$route['content'] = 				(!$route['entry_id']) ? null : $route['content']; //Content array
+			mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
 
-        //Return changed data object back to user
-	        $route['history'] = 				(!$route['history']) ? '0,12' : $route['history']; //How many states from a current block
-	        $route['preset'] =					(!$route['preset']) ? '*' : $route['preset']; //How deep should this query go?
+			//Get existing content tables
+			if( (($route['table_name'] && $route['entry_id']) || $route['content_id']) || $route['branch_id'] || $route['state_id'] ){
 
-	    //Block of data
-	        $block = 							(!$input['block']) ? null : $input['block'];
-	    	$block['transaction'] = 			(!$block['transaction']) ? formatTransaction(__FUNCTION__, $route) : $block['transaction'];
-	    	$block['transaction_time'] = 		(!$block['transaction_time']) ? microtime() : $block['transaction_time'];
-	  		$block['dataview'];					(!$block['dataview']) ? null : $block['dataview'];
-	    	$block['state'] = 					(!$block['state']) ? null : $block['state'];
+				$buffer['route'] = $route;
+				$buffer['route']['dataset'] = '*';
+				$buffer['route']['history'] = '1';
+				$buffer['state'] = 'getContent';
+				$buffer = getContent($buffer);
 
-	    //Caching enabled?
-	    	$cache =							(!$input['cache']) ? null : $input['cache'];
+				$route['content_id'] = $buffer['state']['content_id'];
+				$route['table_name'] = $buffer['state']['table_name'];
+				$route['entry_id'] = $buffer['state']['entry_id'];
 
-    	//$language_id, $table_name, $entry_id, $branch_id, $content, $circles = null
+				//Get branch of current state
+				if($route['state_id'] && !$route['branch_id']){
+					$route['branch_id'] = (!$buffer['state']['branches']) ? null : $buffer['state']['branches']['branch_id'];
+				}
 
-
-			/*$buffer['state']['getContentTable'] = '%';
-	    	if($input['table_name'] && $input['entry_id']){
-				$buffer = getContentTable(array('table_name' => $input['table_name'], 'entry_id' => $input['entry_id'], 'block' => $buffer));
-	    	} elseif($input['content_id']){
-				$buffer = getContentTable(array('content_id' => $input['table_name'], 'entry_id' => $input['entry_id'], 'block' => $buffer));
-	    	}*/
-
-		//&& ($privileges['max_privilege_update'] || $privileges['max_privilege_create']))
-
-			//Add new field, content, branch, state and translation
-			if(!$route['branch'] && !($route['content_id'] && !($route['table_name'] && $route['entry_id']))){
-		      	//SQL - Add to table
-			      	$sql.= "INSERT INTO $table_name (";
-	    			$sql.= implode(', ', $sql_insert[1]);
-			      	$sql.= ") VALUES (";
-	    			$sql.= implode(', ', $sql_entry[3]);
-			      	$sql.= ");";
-				
-					mysqli_query($db, $sql);
-					$entry_id = $db->insert_id;
-
-				$sql_content = str_replace("%new_entry_id%", $entry_id, $sql_content);
-
-				$sql_content = "INSERT INTO content (user_id, content_id, branch_id, time, language_id, circle_id, field, timestamp, content) VALUES ";
-	                    			"'{$input['$table_name']}, ".
-	                    			"'{$input['$entry_id']}, ".
-			} else {
-		    	if($input['table_name'] && $input['entry_id']){
-					$buffer = getContentTable(array('route' => $route, 'block' => $buffer));
-		    	} elseif($input['content_id']){
-					$buffer = getContentTable(array('route' => $route, 'block' => $buffer));
-		    	} else {
-		    		$buffer 
-		    	}
+				//Get main branch if no specific branch_id is chosen
+				if(!$route['branch_id'] && !$route['state_id']){
+					$route['branch_id'] = $buffer['state']['main_branch_id'];
+				}
 			}
+
+			//Let's set up content
+			foreach($content AS $field => $value){
+	       		if($value != null){
+
+		          	$sql_content_row[] = 		"('{$user_id}', ".
+		          								"'{$entity_id}', ".
+			                        			"'{$route['language_id']}', ".
+			                        			time().', '.
+			                        			"'{$route['table_name']}', ".
+			                        			"'%entry_id%', ".
+			                        			"'$field', ".
+			                        			"'$value')";
+
+	       			$sql_insert[1][] = $field;
+	       			$sql_insert[3][] = "'".$value."'";
+
+	       			if($buffer['state']['branches'][$route['branch_id']]['states']){ //I need to get last state of compiled table
+	       				$sql_update[] = $field . " = '{$value}'";
+	       			}
+
+				} else {
+					$success[] = false;
+				}
+	        }
+
+			//Add new content
+			if(!$route['entry_id'] || !$route['content_id']){
+				if(!$route['entry_id']){
+
+					//Add to table
+			      	$sql.= "INSERT INTO {$route['table_name']} (";
+			      	$sql.= 'created_by_user_id, created_by_entity_id';
+	    			$sql.= implode(', ', $sql_insert[1]);
+			      	$sql.= ') VALUES (';
+			      	$sql.= "'{$user_id}', '{$entity_id}'";
+	    			$sql.= implode(', ', $sql_insert[3]);
+			      	$sql.= ');';
+					
+					$success[] = mysqli_query($db, $sql);
+					if(!$route['entry_id'] = $db->insert_id){
+						$success[] = false;
+					}
+				}
+				if(!$route['content_id']){
+
+					//Add to content table
+					$sql = "INSERT INTO content (table_name, entry_id) VALUES ".
+		                    			"'{$route['$table_name']}, ".
+		                    			"'{$route['$entry_id']}";
+					$success[] = mysqli_query($db, $sql);
+
+					if(!$route['content_id'] = $db->insert_id){
+						$success[] = false;
+					}
+				}
+			}
+			else //Update content
+			{
+				//If it's author (user_id or entity_id) updating, then main branch is updated
+				if($buffer['state']['created_by_user_id'] == $user_id || $buffer['state']['created_by_entity_id'] == $entity_id){
+
+				}
+
+
+			}
+
+			//
+			if($route['entry_id']){
+
+			}
+
+			$sql_content = "INSERT INTO content_translation (created_by_user_id, created_by_entity_id, time_created, time_updated, content_id, branch_id, state_id, language_id, field, content) VALUES ";
+		    $sql_content.= implode(', ', $sql_content_row) . ";";
+			$success[] = mysqli_query($db, $sql_content);
+
+			//Nest content on an existing branch_id
+			if($route['branch_id']){
+
+			}
+			//Fork existing branch_id
+			if($route['fork_branch_id'] && $route['fork_state_id']){
+
+			}
+			//Add new branch
+			if($content['title']){
+				if(!$content['namespace']){
+					//Generate namespace from title
+					contentNamespace($route['branch_title']);
+				}
+			}
+
+			//Add new state
+				//Revert to state
+
+
+			//Add new translation
 
 			//Is branch_id set? 
 
 	      	//Construct multilingual entry SQL
-				$sql_content = "INSERT INTO content_translation (user_id, time, content_id, branch_id, language_id, circle_id, field, timestamp, content) VALUES ";	
 
-		        foreach($content AS $field => $value){
-		       		if($value != false){
+			//If all database queries were okay...
+		    if(!in_array(false, $success)){
+		    	mysqli_commit($db);
 
-		       			$time = time();
+			    if($language_id != $GLOBALS['default_language_id']){ //!!! is not yet translated by hand
+			    	$GLOBALS['translation_queue'][] = array('content_id' => $route['content_id'], 'language_id' => $route['language_id'], 'content' => $content);
+			    }
 
-		       			if(is_integer($value) === false && is_float($value) === false){
-				          	$sql_content_row[] = 		"('$user_id', ".
-				          								time().', '.
-				          								"'{$input['content_id']}, "
-					                        			"'{$input['$language_id']}', ".
-					                        			"'$field', ".
-					                        			"'$value')";
-		       			}
+	       		//Entries that have been modified are unsynchronized
+			    unsyncCacheBlocks($cache);
 
-		       			$sql_insert[1][] = $field;
-		       			$sql_insert[3][] = "'".$value."'";
+		        //Return changed data objects back to user
+	        	$route['history'] =			1; //How many states from current branch to get?
+	        	$route['dataset'] =			(!$route['dataset']) ? '*' : $route['dataset']; //Which content datasets should be returned?
 
-		       			$sql_update[] = $field . " = '{$value}'";
+		   		$block = getContent(array('route' => $route));
 
-					} else {
-						$response['status_code'] = '400';
-						return $response[$field] = $value;
-					}
-		        }
-		    	$sql_content.= implode(', ', $sql_content_row) . ";";
+		    	transaction('transaction' => $transaction, $statechanges);
 
-		    //Insert entry SQL
-		      	if($entry_id == '%new_entry_id%'){
-
-
-		      	} else {
-			      	$sql = "UPDATE $table_name SET " . implode(', ', $sql_update) . " WHERE id = '$entry_id'";
-					mysqli_query($db, $sql);
-		      	}
-
-		    mysqli_query($db, $sql_content);
-
-		    if($language_id != $GLOBALS['default_language_id']){ //!!! is not yet translated by hand
-		    	$GLOBALS['translation_queue'][] = array('table_name' => $table, 'entry_id' => $entry_id, 'content' => $content);
+		    } else { //Otherwise rollback transaction
+		    	
+		    	mysqli_rollback($db);
+		    	transaction('transaction' => $transaction, '400');
+		    	$block['state']['status_code'] = '400';
 		    }
 
-		    //unsync block setup - all changed tables and corresponding ids
-	 		$block["{$table_name}.{$table_name}_id"] = $entry_id;
-		    $rand = mt_rand();
-	 		$block[$rand]['content.table_name'] = $table_name;
-	 		$block[$rand]['content.entry_id'] = $entry_id;
-		    unsyncCache($db, $block);
+	    } else {
+		    $block['state']['status_code'] = '400';
+	    }
 
-		    if($entry_id == '%new_entry_id%'){
-		    	$response = getContent($db, $user, $table_name, $entry_id);
-		    }
-
-		    return $response;
-
-	      } else {
-	      	return false;
-	      }
+	    return $block;
     }
+	
 
-  //Translate content from language to language with Google translate - use latest entry by default, or chosen entry
-    //function googleTranslateContent($db, $user, $language_id, )
-
-    function getContent(){
-
- 		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user_id'];
-
-        $input = func_get_args();
-
-        $route = $input['route'];
-
-        //Get content in current language
-        $route['language_id'] = 			(!$route['language_id']) ? null : $route['language_id']; //mandatory route
-
-        //One of these needs to be called
-        $route['content_id']  = 			(!$route['content_id']) ? null : $route['content_id']; //optional content_id
-
-        $route['branch_id'] = 				(!$route['branch_id']) ? null : $route['branch_id']; //optional call of content branch_id
-        $route['branch'] = 					(!$route['branch']) ? null : $route['branch']; //optional call of content branch
-        $route['state_id'] =				(!$route['state_id']) ? null : $route['state_id']; //optional call of content state_id
-
-        $route['keywords'] =				(!$route['keywords']) ? null : $route['keywords']; //filter by keywords
-        //If branch is 
-        $route['circle_id'] = 				(!$route['circle_id']) ? null : $route['circle_id'];
-
-        $route['history'] = 				(!$route['history']) ? '0,12' : $route['history'];
-        $route['preset'] =					(!$route['preset']) ? '*' : $route['preset']; //which subsections of content to return?
-
-        $block = 							(!$input['block']) ? null : $input['block'];
-    	$block['transaction_time'] = 		(!$block['transaction_time']) ? microtime() : $block['transaction_time'];
-  		$block['dataview'];					(!$block['dataview']) ? null : $block['dataview'];
-    	$block['state'] = 					(!$block['state']) ? null : $block['state'];
-
-    	if($user_id && ($route['content_id'] || $route['branch_id'] || $route['branch'] || $route['state_id']) && $route['language_id']){
-
-    	//A way to get to content_id from lower levels of content structure
-			if($route['state_id'] && (!$route['branch_id'] && !$route['content_id'])){
-				$buffer = getStates(array('state_id' => $route['state_id'], 'history' => '0,12'));
-				$route['branch_id'] = $buffer['branch_id'];
-				$route['content_id'] = $buffer['content_id'];
-			}
-			if($route['branch_id'] ||  && !$route['content_id']){
-				$buffer = getBranches(array('state_id' => $route['state_id'], 'history' => '0,12'));
-				$route['content_id'] = $buffer['content_id'];
-			}
-    		$block['transaction'] = 		(!$block['transaction']) ? formatTransaction(__FUNCTION__, $route) : $block['transaction'];
-
-		    if(!$block = existingCacheBlock($block, 'route'){
-
-				//Get content and initiator's user_id
-
-				$sql = 	"SELECT content.id, content.id, AS content_id, content.table_name, content.entry_id FROM content WHERE ".
-			    	   	"content.id = '{$content_id}'";
-
-				$result = mysqli_query($db, $sql);
-	 		    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC))){
-
-					$table_name = $row['table_name'];
-					$entry_id = $row['entry_id'];
-
-	  			 	$sql = 	"SELECT *, id AS {$table_name}_id  FROM {$table_name} WHERE ".
-	 		    	  		"id = '{$entry_id}'";
-
-					$result_table = mysqli_query($db, $sql);
-		 		    if($row_table = mysqli_fetch_array($result_table, MYSQLI_ASSOC))){
-
-						if(isAvailable($user_id, $row_table)){
-
-							$buffer['state'][$content_id] =  array_merge($row, $row_table);
-					    	$buffer['state'][$content_id]['status_code'] = '200';
-
-							$buffer['dataview']['{$input['table_name']}.{$input['table_name']}_id'] = $route['entry_id'];
-					    	$rand = mt_rand();
-					    	$buffer['dataview'][$rand]['content.table_name'] = $table_name;
-					    	$buffer['dataview'][$rand]['content.entry_id'] = $entry_id;
-
-				  			$route['author_id'] = $buffer['state'][$content_id]['user_id'];
-
-				    		if(in_array('getBranches', $route['preset']) || $route['preset'] == '*'){
-
-					  			if($buffer['state'][$content_id]['status_code'] == '200'){
-
-							  		//Content branches & optional filter by branch_id
-						 			$buffer['state']['getBranches'] = '%';
-							  		$buffer = getContentBranches(array( 'route' => $route,
-							  											'block' => $buffer));
-					  			}
-				  			}
-			  			} else {
-			  				$buffer['state'][$content_id]['status_code'] = '400';
-	 		  			}
-
-					} else {
-			  			$buffer['state'][$content_id]['status_code'] = '400';
-					}
-				}
-
-		  		//Merge current block with one delivered by calling function
-		  		$block = mergeBlocks('getContentTable', $block, $buffer);
-  				//Update cache with current block if calling function didn't pass state
-  				if(!$block['state'] && !in_array(array('status_code' => '400'), $block['state'])){
-		    		updateCacheBlock($block);
-		    	}
-  			}
-
-			return $block;
-		}
-    }
-
-    function getBranches(){ //Shares block  for content interpretation
- 		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user_id'];
-
-        $input = func_get_args();
-
-        $route = $input['route'];
-        //Either one of the following is required
-        $route['content_id'] =				(!$route['content_id']) ? null : $route['content_id'];
-        $route['branch_id'] = 				(!$route['branch_id']) ? null : $route['branch_id'];
-        $route['branch'] = 					(!$route['branch']) ? null : $route['branch'];
-
-        $route['state_id'] =				(!$route['state_id']) ? null : $route['state_id'];
-
-        $route['history'] = 				(!$route['history']) ? '0,12' : $route['history'];
-        $route['preset'] =					(!$route['preset']) ? '*' : $route['preset']; //which subsections of content to return?
-
-        $block = 							(!$input['block']) ? null : $input['block'];
-    	$block['transaction'] = 			(!$block['transaction']) ? formatTransaction(__FUNCTION__, $route) : $block['transaction'];
-    	$block['transaction_time'] = 		(!$block['transaction_time']) ? microtime() : $block['transaction_time'];
-  		//$block['dataview'];
-    	$block['state'] = 					(!$block['state']) ? null : $block['state'];
-
-        if($route['content_id'] || $route['branch_id'] || $route['branch']){
-        	if($buffer = existingCacheBlock($input)){
-        		$buffer['state']['status_code'] = '200';
-         	} else {
-
-         		//Branches
-     			$sql_where = ($route['branch']) ? "WHERE branch = '{$route['branch']}' OR branch_id = '{$route['branch_id']}'" : '';
-     		 	$sql = "SELECT *, id AS branch_id FROM content_branch {$sql_where}";
-
-				$result = mysqli_query($db, $sql);
-	 		    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
-
-	 		    	$buffer['state']['getCircles'] = '%';
-		    		$buffer = getCirclesBy(array('branch_id' => $route['branch_id'], 'block' = $buffer));
-		    		$userCircles = getCirclesBy(array('user_id' => $user_id)); //block isn't passed, it doesn't get buffered
-
-	 		    	if(isAvailable($row['content_branch'], $user_id)){
-
-		    			availablePrivileges($author_id, $user_id, $content_branch, $branch_id);
-						
-						$buffer['dataview']['content_branch.branch_id'] = $row['branch_id'];
-						$buffer['dataview']['content_branch.branch'] = $row['branch'];
-
-				      //States & translations within branch
-						if($route['preset'] == '*' || in_array('getState', $route['preset'])){
-							$buffer['state'][$row['branch_id']]['get'] = '%';
-							$route['branch'] = $row['branch'];
-							$buffer = getState(array('route' => $route, 'block' => $buffer));
-						}
-					}
-				}
-         	}
-    	}
-
-		//Dispatch to block
-		if($block['state']){
-			$block = mergeBlocks('getContentTable', $block, $buffer);
-		} else {
-			$block = $buffer;
-
-			//Everything okay?
-  			if(!in_array(array('status_code' => '400'), $block['state'])){
-    			updateCacheBlock($block);
-    		}
-    	}
-
-    	return $block;
-    }
-
-    function getStates(){ //Within a branch there's a historical record of data states
-
- 		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user_id'];
-
-        $input = func_get_args();
-
-    	$conditions = $input['conditions'];
-        $route['branch_id'] = 				(!$route['branch_id']) ? null : $route['branch_id']; //optional call of content branch_id
-        $route['branch'] = 					(!$route['branch']) ? null : $route['branch']; //optional call of content branch
-        $conditions['state_id'] =			(!$input['state_id']) ? null : $input['state_id']; //optional
-        $conditions['history'] = 			(!$input['history']) ? '0,12' : $input['history']; //optional
-
-        $block = 							(!$input['block']) ? null : $input['block'];
-    	$block['transaction'] = 			(!$input['block']['transaction']) ? formatTransaction(__FUNCTION__, $input) : $input['block']['transaction'];
-    	$block['transaction_time'] = 		(!$input['block']['transaction_time']) ? microtime() : $input['block']['transaction_time'];
-  		//$block['dataview'];
-    	$block['state'] = 					(!$input['block']['state']) ? null : $input['block']['state'];
-
-    	if($route['branch'] || $route['branch_id']){
-    		//$contentCircles = getCirclesBy($input, $buffer); //user specific caching is enabled in a seperate block to reduce cache load (think combinations)
-
-    		$buffer['state']['getStates'] = '%';
-			$buffer = getBranchStates(array('conditions' => $conditions, 'block' => $buffer); //
-
-	      //Get multilingual content & history
-			$where = " AND ORDER BY time LIMIT {$history}";
-		    $sql = 	"SELECT id, branch_id, user_id, time, content, googletranslated FROM content WHERE ".
-		    		"language_id = '{$row['language_id']}' AND table_name = '$table_name' AND entry_id = '$entry_id'".$where;
-		    $result_translation = mysqli_query($db, $sql);
-		    $i = 0;
-	        while($row_translation = mysqli_fetch_array($result_translation, MYSQLI_ASSOC)){
-	          	if($i = 0){
-	            	$response[$GLOBALS['languages'][$row['language_id']]['code']][$row_translation['field']] = $row_translation;
-	          	}
-	          	$response[$GLOBALS['languages'][$row['language_id']]['code']][$row_translation['field']]['history'][$i] = $row_translation;
-	        }
-
-	        /*
-				-keywords, values and reflections go into state here (time component: are they available in state's current time?)
-				-
-	        */
-    	}
-
-    }
-
+    //Add content branch
     function addBranch(){
     	
     }
 
-    function getBranchStates(){
-
-    }
-
-    function addBranchState(){
-
-    }
-
-    function getStateTranslations(){
+	//Change main branch for content    
+    function changeMainBranch(){
 
  		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user_id'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
 
- 		if($)
+    	if($table_name && $entry_id && is_array($content)){
 
- 			//translate with google
+			//Let's set up content
+			foreach($content AS $field => $value){
+	       		if($value != null){
+	       			$sql_update[] = $field . " = '{$value}'";
+				} else {
+					$success[] = false;
+				}
+	        }
+
+			$sql = "UPDATE {$table_name} SET " . implode(', ', $sql_update) . " WHERE id = '{$entry_id}'";
+			$success[] = mysqli_query($db, $sql);
+
+			return $success;
+    	} else {
+    		$success[] = false;
+    	}
     }
+    function forkContent(){
 
-    function addStateTranslation(){
-		$sql_content = "INSERT INTO content (user_id, time, content_id, branch_id, state_id, language_id, googletranslated, field, content) VALUES ";
-                			"'{$input['$table_name']}, ".
-                			"'{$input['$entry_id']}, ".
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
+
+        $input = func_get_args();
+
+        //Function router
+    	$route = $input['route']; 	//state_id - to identify content that's being edited (necessary)
+    								//title - new branch title (necessary)
+    								//namespace (optional)
+		
+		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+    	if($route['state_id']){
+    		
+			$buffer['state']['getBranches'] = '*';
+	        $buffer = getStates(array('route' => $route, 'block' => $buffer));
+
+	        $route['content_id'] = current($buffer['state']['getBranches'])['content_id'];
+	        $route['branch_id'] = current($buffer['state']['getBranches'])['branch_id'];
+
+	        
+    	}
+
+        //Get current branch_id and content_id...
+
+
+        $block['relations']['branch_id'] = $route['branch_id'];
+
+       	//Content to add
+        $content = $input['state'];
+
+		transaction(array('transaction' => $transaction));
     }
-
-    function isAvailable($content, $user_id){
-
-		if($content['removed'] == 0){
-			return true;
-		}
-		if($content['removed'] > 0 && ($content['removed_by_user_id'] == $user_id || ($content['user_id'] == $user_id)){
-			return true
-		);
-		return false;
-	}
 
   //Database text is translated to English for multilingual search capabilities
     function translateToDefault(){
 
       $db = $GLOBALS['db'];
-      $input = renderInput(func_get_args());
+      $input = func_get_args();
 
       if($input['language_id'] != $GLOBALS['default_language_id']){
 
@@ -441,3 +277,345 @@
         $sql_update = "UPDATE $table SET ".implode(', ', $sql_update)." WHERE id = '{$array['table_id']}'";
       }
     }
+
+  	//Checks for content namespace availability (within a given user/entity context). Free returns correctly formatted string, existing returns state_id
+	function contentNamespace(){
+
+ 		$db = $GLOBALS['db'];
+
+ 		$input = func_get_args();
+		$input['name'] = preg_replace('/[^A-Za-z0-9\-]/', '', $input['name']); //removes special characters
+
+        if($input['name']){
+
+			if($input['content_id']){
+        		
+        	}
+        	if($input['user_id']){
+
+        	}
+
+        	//content_
+
+			/*$sql = 	"SELECT id, content_id, branch_id, id AS state_id FROM content_state WHERE ".
+		    	   	"namespace = '{$name}'";
+			$result = mysqli_query($db, $sql);
+			$row = mysqli_fetch_array($result, MYSQLI_ASSOC));*/
+
+			$sql = 	"SELECT id, content_id, branch_id, id AS state_id FROM content_branch WHERE ".
+		    	   	"namespace = '{$name}'";
+		} else {
+			return null;
+		}
+	}
+
+
+
+  //Translate content from language to language with Google translate - use latest entry by default, or chosen entry
+    //function googleTranslateContent($db, $user, $language_id, )
+
+    function getContent(){
+
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
+
+        $input = func_get_args();
+
+        //Function router
+    	$route = ksort($input['route']); 	//language_id - necessary
+    										//(content_id || table_name & entry_id), (branch || branch_id), state_id - one of them needs to be called
+    										//history - optional - how many states of each field show be returned? (default: 0,12)
+  
+    										//circle_id - optional 
+
+        $route['dataset'] =					(!$route['dataset']) ? '*' : ksort($route['dataset']); //dataset - optional - which content datasets should be returned?
+
+        $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+        $block = 							(!$input['block']) ? null : $input['block'];
+		$block['transaction'] = 			(!$block['transaction']) ? $transaction : $block['transaction'];
+
+    	if(($user_id || $entity_id) && ($route['content_id'] || $route['branch_id'])){
+
+		    if($block = existingCacheBlock($transaction){
+		    	$block['state']['status_code'] = '200';
+		    } else {
+
+	    		//Get content_id if only branch_id is set
+	    		$buffer = null;
+				if(!$route['content_id'] && $route['branch_id'] || $route['state_id'])){
+					$buffer_branches = getBranches(array('route' => $route));
+					$route['content_id'] = $buffer['state'][$route['branch_id']]['content_id'];
+				}
+
+				//Get content and initiator's user_id
+				$sql = 	"SELECT content.id, content.id, AS content_id, content.table_name, content.entry_id FROM content WHERE ".
+			    	   	"content.id = '{$route['content_id']}'";
+
+				$result = mysqli_query($db, $sql);
+	 		    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC))){
+
+					$table_name = $row['table_name'];
+					$entry_id = $row['entry_id'];
+
+	  			 	$sql = 	"SELECT *, id AS {$row['table_name']}_id  FROM {$row['table_name']} WHERE ".
+	 		    	  		"id = '{$row['entry_id']}'";
+
+					$result_table = mysqli_query($db, $sql);
+		 		    if($row_table = mysqli_fetch_array($result_table, MYSQLI_ASSOC) &&
+		 		    	isAvailable(array('user_id' => $user_id, 'entity_id' => $entity_id, 'content' => $row_table))){
+
+						if(in_array('getContent', $route['dataset']) || $route['dataset'] = '*'){
+
+							$row_table['status_code'] = '200';
+							$buffer['state'][$route['content_id']] = array_merge($row, $row_table);
+
+							$buffer['relations']['{$row['table_name']}.{$row['table_name']}_id'] = $row['entry_id'];
+					    	$rand = mt_rand();
+					    	$buffer['relations'][$rand]['content.table_name'] = $table_name;
+					    	$buffer['relations'][$rand]['content.entry_id'] = $entry_id;
+
+					    	//Build up content table fields as template for state
+					    	foreach($buffer['table'] AS $key => $value){
+					    		if($key != ('id' || "{$row['table_name']}_id" || 
+					    					'created_by_user_id' || 'created_by_entity_id' || 
+					    					'time_created' || 'time_updated' || 
+					    					'removed_by_user_id' || 'removed_by_entity_id' ||
+					    					'time_removed')){
+
+					    			$buffer['table'][] = $key; //
+					    		}
+					    	}
+
+				    		if(in_array('getBranches', $route['dataset']) || $route['dataset'] == '*'){
+
+					  			if($buffer['state'][$route['content_id']]['status_code'] == '200'){
+
+									if(isset($buffer_branches)){ //If we got branches before already
+										$buffer = mergeBlocks('getBranches', $buffer, $buffer_branches);
+									} else {
+								  		//Content branches & optional filter by branch_id
+							 			$buffer['state'][$route['content_id']]['branches'] = 'getBranches';
+								  		$buffer = getBranches(	array( 	'route' => $route,
+								  										'block' => $buffer));
+									}
+					  			}
+				  			}
+						}
+
+		  			} else {
+		  				$buffer['state'][$route['content_id']]['status_code'] = '400';
+ 		  			}
+				}
+
+  				//Update cache with current block if calling function didn't pass state
+  				if(!$block['state'] && !in_array(array('status_code' => '400'), $block['state'])){
+		    		updateCacheBlock($block);
+		    	}
+  			}
+
+	  		//Merge current block with one delivered by calling function
+	  		$block = mergeBlocks('getContent', $block, $buffer);
+
+  		    transaction(array('function' => __FUNCTION__));
+
+			return $block;
+		}
+    }
+
+    function getBranches(){
+
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
+
+        $input = func_get_args();
+
+        //Function router
+    	$route = ksort($input['route']); 	//
+    										//content_id, branch_id, state_id - one of them needs to be called
+    										//history - optional - how many states to return from current branch?
+    										//dataset - optional - which content datasets should be returned?
+
+    										//circle_id - optional         $route['content_id'] =				(!$route['content_id']) ? null : $route['content_id'];
+
+        $route['dataset'] =					(!$route['dataset']) ? '*' : ksort($route['dataset']); //optional - which content datasets should be returned?
+
+        $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+        $block = 							(!$input['block']) ? null : $input['block'];
+    	$block['transaction'] = 			(!$block['transaction']) ? $transaction : $block['transaction'];;
+
+        if($route['content_id'] || $route['branch_id'] || $route['state_id']){
+        	if(!$buffer = existingCacheBlock($transaction)){
+
+         		if($route['state_id'] && !$route['branch_id']){ //get by state_id
+         			$buffer_states = getStates(array('route' => $route));
+		 		    $route['content_id'] = $buffer['state']['states'][$route['state_id']]['content_id'];
+		 		    $route['branch_id'] = $buffer['state']['states'][$route['state_id']]['branch_id'];
+         		}
+
+         		//Branches
+     			$sql_where[] = ($route['content_id']) ? "content_id = '{$route['content_id']}'" : '';
+     			$sql_where[] = ($route['branch_id']) ? "branch_id = '{$route['branch_id']}'" : '';
+     		 	$sql = "SELECT *, id AS branch_id FROM content_branch WHERE ".implode(' AND ', $sql_where);
+
+				$result = mysqli_query($db, $sql);
+	 		    while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+
+	 		    	$buffer['state'][$row['branch_id']] = 'getStates';
+
+	 		    	if(isset($buffer_states)){
+  						$buffer = mergeBlocks('getStates', $buffer, $buffer_states);
+	 		    	} else {
+	 		    		$buffer = getStates('route' => $route, 'block' => $buffer);
+	 		    	}
+
+	 		    	$buffer['state'][$row['branch_id']]['circles'] = 'getCircles';
+		    		$buffer = getCirclesBy(array('route' => array('branch_id' => $route['branch_id']), 'block' = $buffer));
+
+	 		    	if(isAvailable($buffer)){
+						
+						$buffer['relations']['content_branch.branch_id'] = $row['branch_id'];
+
+				      //States & translations within branch
+						if($route['dataset'] == '*' || in_array('getStates', $route['dataset'])){
+							$buffer['state'][$row['branch_id']]['states'] = 'getStates';
+							$route['branch'] = $row['branch'];
+							$buffer = getStates(array('route' => $route, 'block' => $buffer));
+						}
+
+					}
+				}
+         	}
+    	}
+
+		//Update cache with current block if calling function didn't pass state
+		if(!$block['state'] && !in_array(array('status_code' => '400'), $block['state'])){
+    		updateCacheBlock($block);
+    	}
+
+  		//Merge current block with one delivered by calling function
+  		$block = mergeBlocks('getBranches', $block, $buffer);
+
+        $transaction = transaction(array('function' => __FUNCTION__));
+
+    	return $block;
+    }
+
+    function getStates(){ //Within a branch there's a historical trail of content states
+
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
+
+        $input = func_get_args();
+    	$route = $input['route'];
+
+    	$route['language_id'] = 	(!$route['language_id']) ? $GLOBALS['language_id'] : $route['language_id'];
+        $route['dataset'] =			(!$route['dataset']) ? '*' : ksort($route['dataset']); //which subsections of content to return?
+
+        $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+        $block = 					(!$input['block']) ? null : $input['block'];
+    	$block['transaction'] = 	(!$block['transaction']) ? $transaction : $block['transaction'];
+
+    	if($route['branch_id']){
+
+        	if(!$buffer = existingCacheBlock($transaction)){
+
+         		//Get content states trail
+			    $sql = 	"SELECT * FROM content_state WHERE ".
+			    		"language_id = '{$route['language_id']}' AND branch_id = '{$route['branch_id']}'";
+
+			    //Get content 
+
+		        $response[$GLOBALS['languages'][$row['language_id']]['code']][$row_translation['field']] = $row_translation;
+		        $response[$GLOBALS['languages'][$row['language_id']]['code']][$row_translation['field']]['history'][$i] = $row_translation;
+
+	    		/*
+					-keywords, values and reflections go into state here (time component: are they available in state's current time?)
+					-
+		        */
+			}
+    	}
+
+		//Update cache with current block if calling function didn't pass state
+		if(!$block['state'] && !in_array(array('status_code' => '400'), $block['state'])){
+    		updateCacheBlock($block);
+    	}
+
+  		//Merge current block with one delivered by calling function
+  		$block = mergeBlocks('getStates', $block, $buffer);
+
+        $transaction = transaction(array('transaction' => $transaction));
+
+    	return $block;
+    }
+
+
+    function isAvailable($row){ //Returns if content is available... Think ahead of a problem: branches in circles & deletion of original content
+
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
+
+      	if($row['time_removed'] == 0){
+      		return true
+      	} else {
+	      	foreach($row AS $key => $value){
+	      		if(strpos('user_id', $key) && $user_id == $value){
+	      			return true;
+	      		}
+	      		if(strpos('entity_id', $key) && $entity_id == $value){
+	      			return true;
+	      		}
+	      	}
+	      	return false;
+      	}
+	}
+
+	//$block['state']['branches'] = 'getBranches';
+	//$buffer['state'][12] = array();
+
+    //As functions building data output are calling other functions to supply specific datasets, blocks are merged
+	function mergeBlocks($needle, $block, $buffer){ //taking in $block && $buffer (where ['state'] contains data and needle )
+
+		if($pathway_parts = array_search_path($needle, $block)){ //http://stackoverflow.com/users/567663/paul
+
+			foreach ($pathway_parts as $part){
+
+			   // Possibly check if $newBlock[$part] is set before doing this.
+			   $newBlock = &$newBlock[$part];
+			}
+
+			if($block['transaction']){ unset($buffer['transaction']); }
+
+			$newBlock = $buffer['state'];
+			unset($buffer['state']);
+
+			$newBlock = array_merge($block, $newBlock);
+			$newBlock = array_merge($newBlock, $buffer); //merge transaction & relations
+		} else {
+			$newBlock = array_merge($block, $buffer);
+		}
+
+		return $newBlock;
+	}
+
+	function array_search_path($needle, array $haystack, array $path = []) { //http://stackoverflow.com/questions/27151958/searching-for-a-value-and-returning-its-path-in-a-nested-associative-array-in-ph
+	    foreach ($haystack as $key => $value) {
+	        $currentPath = array_merge($path, [$key]);
+	        if (is_array($value) && $result = array_search_path($needle, $value, $currentPath)) {
+	            return $result;
+	        } else if ($value === $needle) {
+	            return $currentPath;
+	        }
+	    }
+	    return false;
+	}
+
+	//needle: getBranches
+	//
+?>

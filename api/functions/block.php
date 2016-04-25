@@ -1,118 +1,57 @@
 <?php
 
-//Cache works more efficiently when table has less entries and is therefore cleared, while block stays in chain forever unmodified
-	//Blockchain example length ------------------------------------------------------
-	//Cache example length	 	----
+  //As functions querying the database are called, their stamp is attached to the transaction block
+  	function transaction(){
 
-//With blockchain, recent data states are stored and collected from database
+        $input = func_get_args();
 
-  //Get existing cache block - is holding cached data for specific functions, which block data state
-    function existingCacheBlock(){
+        //When function starts
+        if($input['function'] && $input['route']){
 
-    	$db = $GLOBALS['db'];
-      	$input = func_get_args();
+    		$transaction = $input['function'].'('.json_encode($input['route']).')';
+    		$buffer = 
 
-    	$sql = "SELECT dataview, state FROM cache WHERE transaction = '{$input['block']['transaction']}' AND (unsynchronized > ".time()." OR unsynchronized = 0)";
-	    $result = mysqli_query($db, $sql);
-	    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
-	    	$block['transaction'] = $input['block']['transaction'];
-	    	$block['dataview'] = json_decode($row['dataview']);
-	    	$block['state'] = json_decode($row['state']);
-	    	return $block;
-	    } else {
-	    	return false;
-	    }
-    }
+    		$GLOBALS['transactions'][$transaction] = array(microtime() => array('route' => $input['route']));
+        }
 
-    function updateCacheBlock(){ //cupdateCcheBlock
+        //When function closes
+        if($input['transaction']){
 
+        	//In case more than one transaction with same parameters was called...
+			foreach($GLOBALS['transactions'][$transaction] AS $start => $array){ 
+				if(!$array['duration']){ //If transaction wasn't closed yet...
+					$last_start = $start; //Last to open closes first (because of possible nested functions)
+				}
+			}
+			
+        	$GLOBALS['transactions'][$input['transaction']][$last_start]['duration'] = microtime() - $last_start;
+
+        	//If data state changed get changes from state_id corresponding changes of field as compared with previous state_id
+        	if($input['statechanges']){
+        		$GLOBALS['transactions'][$input['transaction']][$last_start]['statechanges'] = $input['statechanges']; //taking in array('state_id', 'changed');
+        	}
+
+        	//In case transaction failed...
+        	if(isset($input['status_code'] == '400')){
+        		$GLOBALS['transactions'][$input['transaction']][$last_start]['status_code'] = '400';
+        	}
+
+        	$transaction = $input['transaction'];
+        }
+
+    	return $transaction;
+  	}
+
+  	//With blockchain, transactions and corresponding data state changes are gathered in blocks, linking back to blocks holding data state roots
+  	//This is a relational database, where state changes are gathered in content_state table, while transactions are logged in blocks
+		//To-do: merkletree implementation for data validation - script is in merkletree.php
+  		//Idea for implementation: automatic post to Facebook page with block_id and hash at random time as an independent partial blockchain storage
+    function newBlock(){
     	$db = $GLOBALS['db'];
     	$user_id = $GLOBALS['user_id'];
-      	$input = func_get_args();
+    	$entity_id = $GLOBALS['entity_id'];
 
-    	if(isset($input['block']['transaction']) && isset($input['block']['dataview']) && isset($input['block']['state']) && isset($input['block']['time'])){
-
-    		$transaction = $input['block']['transaction'];
-	    	$dataview = $input['block']['dataview'] = json_encode($input['block']['dataview']);
-	    	$state = $input['block']['state'] = json_encode($input['block']['state']);
-
-	    	$sql = "SELECT dataview, state, unsynchronized FROM cache WHERE transaction = '{$transaction}')";
-
-	    	$result = mysqli_query($db, $sql);
-		    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
-
-		    	if($row['state'] != $state || $row['dataview'] != $dataview){
-	              	$sql = "UPDATE cache SET dataview = '{$dataview}', ".
-	              							"object = '{$state}', ".
-	              							"unsynchronized = 0, ".
-	              							"time = ".time()." ".
-	              						"WHERE id = '{$row['id']}'";
-		    	} else {
-	              	$sql = "UPDATE cache SET unsynchronized = 0, time = ".time()." WHERE id = '{$row['id']}'";
-	            }
-		    } else {
-
-	          	$sql = "INSERT INTO cache (time, transaction, dataview, state, unsynchronized) VALUES (".
-	          							time().', '.
-	          							"'{$transaction}', ".
-	          							"'{$dataview}', ".
-	          							"'{$state}', ".
-	          							"0); ";
-			}
-
-			if(!$row || ($row['unsynchronized'] < time() && $row['unsynchronized'] != 0)){
-		    	mysqli_query($db, $sql);
-			}
-
-			//Blockchain simulation - dispatch block
-			newBlock($input);
-		}
-
-	    return true;
-    }
-
-   	//This happens when content is added/edited
-    function unsyncCache(){
-
-    	$db = $GLOBALS['db'];
-      	$input = func_get_args();
-
-      	$unsynchronized = $input['unsynchronized'];
-
-    	if(is_array($unsynchronized)){
-			/*
-			USAGE EXAMPLE:
-			User circles updated:
-				$updated['user_circle.user_id'] = $user['id'];
-				$updated['circle_content']['circle_content.table_name'] = 'reflection';
-				$updated['circle_content']['circle_content.entry_i'] = '11';
-			*/
-	    	foreach($unsynchronized AS $table_field => $key){
-	    		if(!is_array($key)){
-		    		$array = '"'.$table_field.'":"'.$key.'"'; //...user_id = $user['id'] in an array
-		    		//Any and all caches with ("user_sphere" in "transaction") AND (user_id = $user['id'] in "object") should be unsynchronized
-		    		$condition[] = "(dataview LIKE '%{$array}%')";
-	    		} else {
-	    			unset($condition_and);
-	    			foreach($key AS $table_field_and => $key_and){
-	    			    $array_and = '"'.$table_field_and.'":"'.$key_and.'"'; //tableentry_id = $user['id'] in an array
-	    				$condition_and[] = "(dataview LIKE '%{$array_and}%')";
-	    			}
-	    			$condition[] = '('.implode(' AND ', $condition_and).')';
-	    		}
-	    	}
-	    	$sql = "UPDATE cache SET unsynchronized = ".time()." WHERE ".implode(' OR ', $condition); //Outdating one row at a time, with OR in between
-	    	mysqli_query($db, $sql);
-    	}
-    }
-
-    //Blockchain symbolics, purpose access control, efficiency measurements
-		//To-do: merkletree implementation - script is in merkletree.php)
-    function newBlock(){ //With blockchain, transactions are gathered in blocks
-    	$db = $GLOBALS['db'];
-    	$user_id = $GLOBALS['user_id'];
-
-    	if(isset($input['block']['transaction']) && isset($input['block']['dataview']) && isset($input['block']['state']) && isset($input['block']['time'])){
+    	if(isset($GLOBALS['transactions'])){
 
 		    //Block table in Ethereum
 		    /* 
@@ -121,71 +60,53 @@
 		       	- stateroot - links to data states in previous blocks
 		       	- hash - current block hash (generated by taking into account hashes of all previous blocks - https://en.wikipedia.org/wiki/Merkle_tree#/media/File:Hash_Tree.svg)
 		       	- previous_block_hash -> a sequence of blocks - data can be validated by cross-checking merkle tree proof with more than one node
+		       		- !!! is this 
 
 				* in blockchain...
-					transactions can be validated by each peer, by repeating transaction on top of stateroot
+					transactions can be validated by each peer, by repeating functions on top of stateroot
 		    */
 			//Block table in this simulation
 			/*	
+				- user_id - user who accessed the database
+				- entity_id - user acting on behalf of an entity_id
 				- time - block creation time
-				- transaction - function and corresponding inputs
-				- transaction_time - how much time processing took (microseconds)
-				- state - data object that comes out as a result (if this were to go into a real blockchain to validate data, it could be a hash of data object)
-				- hash - merkletree(hash of state & previous block's hash) (https://blog.ethereum.org/2015/11/15/merkling-in-ethereum/)
-				- previous_block_hash
-				- dataview holds data relation keys contained in state (to reduce load on looking )
-				- dispatch to blockchain
+				- transactions - high-level functions with inputs and corresponding data state changes
+				- transaction_duration - how much time processing took (microseconds)
+				- hash - !!! to-do - merkletree hash of "transactions" & previous block's hash
+
+				* well, it's not exactly blockchain... it doesn't provide data validity check
+					- while transactions table can provide details into every change made (outside of block table), hashes are not mirrored on a distributed database
+					- thus, consensus for block validity isn't distributed among peers
+					- furthermore, transactions can't be validated by repeating functions on top of stateroot
 			*/
 
-	    	$statehash = md5($input['block']['state']);
+	    	$transactions = $GLOBALS['transactions'];
 
-  			//With Ethereum's consensus is computing power charged to the user (Ether is currency), generating a transaction after request
-  			//Here, query time is logged, enabling logging changes to data as well as measuring script efficiency
-	    	$transaction_time = microtime() - $input['block']['transaction_time'];
+			foreach($GLOBALS['transactions'] AS $transaction => $array){
+				$transaction_start = array_key($array);
+				$start = 	(($transaction_start < $start && $start) || !$start) ? $transaction_start : $start;
+				$end = 		(($array['end'] > $end && $end) || !$end) ? $array['end'] : $end;
 
-			$statehash = md5($input['block']['state']);
+				foreach($array['statechanges'] AS $state_id => $changed){
+					$statechanges[array_key($array).'-'.$array['end']][$state_id] = $changed;
+				}
+			}
+	    	$transaction_duration = $end - $start;
 
-			$sql .= "INSERT INTO block (user_id, time, transaction, transaction_time, dataview, statehash) VALUES ".
+	   		$transactions = json_encode($transactions);
+			$hash = md5($transactions); //!!! merkletree
+
+			$sql.= "INSERT INTO block (user_id, entity_id, time_created, transaction_duration, transactions, hash) VALUES ".
 	      							"'{$user_id}', ".
+	      							"'{$entity_id}', ".
 	      							time().', '.
-	      							"'{$input['transaction']}', ".
-	      							"'{$transaction_time}', ".
-	      							"'{$input['dataview']}', ".
-	      							"'{$statehash');";
+	      							"'{$transaction_duration}', ".
+	      							"'{$transactions}', ".
+	      							"'{$hash}';";
+			if(mysqli_query($db, $sql_content)){
+	      		unset();
+			}
 		}
     }
 
-  	function formatTransaction($input){
-
-   		unset($input['block']);
-    	return $function.'('.implode($input).')';
-  	}
-
-	function mergeBlocks($needle, $block, $buffer){
-
-		if($pathway_parts = array_search_path($needle, $block['state'])){ //http://stackoverflow.com/users/567663/paul
-
-			foreach ($pathway_parts as $part)
-			{
-			   // Possibly check if $ref[$part] is set before doing this.
-			   $newBlock = &$newBlock[$part];
-			}
-
-			if($block['transaction']){ unset($buffer['transaction']); }
-
-			$newBlock = $buffer['state'];
-			unset($buffer['state']);
-
-			$newBlock = array_merge($block, $newBlock);
-			$newBlock = array_merge($newBlock, $buffer); //merge transaction & dataview
-		} else {
-			$newBlock = array_merge($block, $buffer);
-		}
-
-		return $newBlock;
-	}
-  	/*function mergeBlocks($merging, $merged){
-  		$merging['ether']
-  		return $merging;
-  	}*/
 ?>

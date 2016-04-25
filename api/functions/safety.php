@@ -68,9 +68,14 @@ function input( $name, $data_type, $required_length, $max_length = "" ){
 	  		//well...
 	  		$conditions['data_type'] = true;
 	  		break;
+
+	  	case 'email':
+	  		$conditions['data_type'] = filter_var(urldecode($input), FILTER_VALIDATE_EMAIL);
+	  		break;
 	  }
 
 	  //Clean data
+	  $input = urldecode($input);
 	  $input = strip_tags($input);
 	  $input = addslashes($input);
 	  $input = mysqli_real_escape_string( $GLOBALS['db'], $input );
@@ -86,11 +91,11 @@ function input( $name, $data_type, $required_length, $max_length = "" ){
 	  }
 	  else
 	  {
-	    return false;
+	    return null;
 	  }
 
 	} else {
-	  return false;
+	  return null;
 	}
 }
 

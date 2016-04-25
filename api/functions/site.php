@@ -1,20 +1,30 @@
 <?php
 
-function getSite($url){
-	if($GLOBALS['user']['id']){
-		$sql = "SELECT *, site.id AS site_id FROM site WHERE url = '$url' AND removed = 0";
-	    $result = mysqli_query($db, $sql);
-	    if($response = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+function getSite(){
 
-	    	if($content = getContent($db, 'site', $row['site_id'])){
-	    		$response = array_merge($response, $content);
+	$db = $GLOBALS['db'];
+
+	$route = $input['route'];
+
+    transaction(__FUNCTION__, $route);
+
+	if($route['domain']){
+
+		$sql = "SELECT *, site.id AS site_id FROM site WHERE domain = '{$route['domain']}'";
+	    $result = mysqli_query($db, $sql);
+	    if($buffer['state'] = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+
+	    	if($buffer = getContent('route' => array('table_name' => 'site', 'entry_id' => $row['site_id']), 'block' => $buffer)){
+	    		$block = $buffer;
 	    	}
 
-	    	return $response;
-	    } else {
-	    	return false;
+	    	$response = $block;
 	    }
 	}
+    
+    transaction(array('function' => __FUNCTION__));
+
+	return $response;
 }
 
 ?>

@@ -3,15 +3,15 @@
   @ini_set('display_errors', 0);*/
 /*
 * This could be a beginning of something beautiful...
-* This is not just another database, it's a metaphor...
+* This database is a metaphor...
 */
 
 //Cross-origin enabler, to enable a bridge of data to a multiverse of online services, onwards into the world of the living
   header('Access-Control-Allow-Origin: *');
 
 /*
-  Unlike with the blockchain, image of data is centrally managed.
-  This database can't check if code really did what the resulting data did, yet. In other words, trusting the central authority managing the website is necessary, still.
+  Unlike with the blockchain, image of data is centrally managed
+  This database can't check if code really did what the resulting data did, yet. In other words, trusting the central authority managing the website is necessary, still
 
     This API aims to enable some features a decentralized network of nodes running blockchain holds, thus symbolizing the paradigm shift blockchain can bring about
       - data pool accessible to services user chooses
@@ -24,92 +24,59 @@
       -a process of collecting, storing and processing data should have trust at both both ends, social and technological
       -trust in validity of data is based on a mathematical proof that is socially accepted (merkletree)
       -on the social end trust is enabled by a critical mass of ethical peers, beholding personal traits such as [{"value": {"honesty", "integrity", "responsibility"...}}]
-      -based on a need, from which changes sprout, reflected adoption of a process is social proof of trust
+      -based on a need from which changes sprout, adoption of a process is social proof of trust
 */
 
-  include('include.php');
-  includeFunctions('dbwrapper.php'); //content add/update/get
-  includeFunctions('block.php'); //metamorphosis of caching in this database with the blockchain concept
-  includeFunctions('vendor/merkle-tree/merkletree.php'); //data validation algorithm (currently not in use)
-  includeFunctions('safety.php'); //keep interactions with API/DB safe
-  $db = dbWrapper();
+  include('includeFunctions.php'); //Check out for overview of functionalities
+  dbWrapper(); //$GLOBALS['db'] stores database object
 
-//Session - while reading comments in this API one should get less confused. Is this true for you?
+/*
+  With blockchain, any changes to data states are stored in the distributed database
+  Ethereum's consensus charges computing power to the user (in amount of Ether as currency), providing incentive for script efficiency
+
+  * With this database interactions are logged, enabling tracking changes to data, access control and measuring script efficiency
+*/
+  $transaction = transaction(array('function' => 'main.php', 'route' => $_REQUEST));
   session_start();
-  if(input('call', 'string', 1, 32)){
-    if(strpos($_REQUEST['call'], '-') > 0){
-      $buffer = explode("/", $_REQUEST['call']);
-      $GLOBALS['o'] = $buffer[0]; //object
-      $GLOBALS['f'] = $buffer[1]; //function
-    } else {
-      $GLOBALS['o'] = $_REQUEST['call']; //object
-    }
-  }
 
-//Functions
-  includeFunctions("auth.php"); //session, authentication, sign in/up to service
-  includeFunctions("oauth.php"); //social media & other services integrations
+//Site
+  $GLOBALS['site'] = getSite('route' => array('domain' => input('site', 'string', 1, 64)))['state']; //in $GLOBALS['user']['auth_site_id']; as set by authenticate();
 
-  includeFunctions("site.php"); //site specific data pool functions
-  includeFunctions("lang.php"); //language & translation functions
-  includeFunctions("user.php"); //user passport functions
-  includeFunctions("cron.php"); //DB just in time maintenance and other timely arrants
-  includeFunctions("mailer/form-handler.php"); //email loop - inviting, confirming emails, notifying
-
-  includeFunctions("circle.php"); //circle is common grounds, encircling people and content, and as such purposes, storylines and rules of engagement
-  includeFunctions("privilege.php"); //rules of engagement coded
-
-  includeFunctions("place.php"); //place on a map
-  includeFunctions("portal.php"); //a social gathering manages a portal
-
-  includeFunctions("reflection.php");
-  includeFunctions("value.php");
-  includeFUnctions("keyword.php");
-
-  includeFunctions("sphere.php"); //sphere is an extra dimension to circles, a wormhole to something undefined as of yet
-
-//Social media based authentication / data gathering functions
-  //Facebook login
-    if(!empty($_GET['code']) && !empty($_GET['state']) 
-      && !empty($_SESSION['social_login_user_id'])){
-        loginFacebook($db, $_SESSION['social_login_user_id']);
-    }
-  //Twitter login
-    if(!empty($_GET['oauth_verifier']) && !empty($_SESSION['oauth_token']) && !empty($_SESSION['oauth_token_secret'])
-      && !empty($_SESSION['social_login_user_id'])){
-      loginTwitter($db, $_SESSION['social_login_user_id']);
-    }
-
-//Authentication & user profile data
-  $GLOBALS['user'] = authenticate(input( 'auth', 'md5', 32, 32 ));
+//User authentication & basic necessary data
+  $GLOBALS['user'] = authenticate('route' => array('auth' => input( 'auth', 'md5', 32, 32 )));
   if(!isset($_REQUEST['call'])){
-    $GLOBALS['user']['profile'] = array_merge($GLOBALS['user'], getUserProfile($GLOBALS['user']['id']));
+    //$GLOBALS['user']['profile'] = array_merge($GLOBALS['user'], getUser($GLOBALS['user']['id']));
   }
   $response['user'] = $GLOBALS['user'];
-
   if($GLOBALS['user']['email_confirmation_time'] > 0 || 
      $GLOBALS['user']['facebook_user_id'] > 0 || 
      $$GLOBALS['user']['twitter_user_id']){
     $response['status'] = 'welcome'; //in the sense that user is on a path to building a (transparent?) identity
   }
+  $GLOBALS['entity'] = getEntity('entity_id' => input('entity_id', 'integer', 1, 11));
 
 //Language
-  $GLOBALS['languages'] = listLanguages($GLOBALS['user']['id']); //list all languages ('googletranslate' enabled?)
+  $GLOBALS['languages'] = listLanguages($GLOBALS['user']['id']); //list all languages ('googletranslate' 0 or 1?)
   $GLOBALS['default_language_id'] = $GLOBALS['languages']['en']['id']; //all data is envisioned to be translated into one default language for search capabilites
   //$GLOBALS['language_code'] = 'en'; //default site language is English
   $GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query - now set to english, soon to be reflecting the user's query
 
-//Site
-  $GLOBALS['site_id'] = getSite($db, $GLOBALS['user']['id']);
-
 //Circle
-  if(input('circle_id', 'integer', 1, 11)){
+  /*if(input('circle_id', 'integer', 1, 11)){
     $GLOBALS['circle_id'] = $_REQUEST['circle_id'];
   }
-  $GLOBALS['circles'] = []; //circle caching object
+  $GLOBALS['circles'] = []; //circle caching object*/
 
-//Functions
+//Call to API 
+  if(strpos($_REQUEST['call'], '/') > 0){
+    $buffer = explode('/', $_REQUEST['call']);
+    $GLOBALS['o'] = $buffer[0]; //object
+    $GLOBALS['f'] = $buffer[1]; //function
+  } else {
+    $GLOBALS['o'] = $_REQUEST['call']; //object
+  }
 
+//Available functionalities
   switch($GLOBALS['o']){ //Route: object/function   <---   data flow
 
     case 'blog':
@@ -149,7 +116,7 @@
       }
       break;
 
-    case 'entityName': //user/content OR circle/content
+    case 'nameSpace': //user/content_state OR circle/content_branch (combinations among user & circle and content_branch & content_state) 
       if($GLOBALS['f'] == 'add'){
         
       }
@@ -267,27 +234,36 @@
 
   //Register / signin
     case 'passport':
-      $response = passThrough($GLOBALS['user']['id']);
+      //Signin
+      $route['email'] =             input('email', 'email', 1, 64);
+      $route['password'] =          input('password', 'string', 6, 32);
+      //+Register
+      $route['password_confirm'] =  input('password_confirm', 'string', 6, 32);
+      $route['username'] =          input('username', 'string', 3, 32);
+
+      $response = passThrough('route' => $route);
       break;
 
     case 'loginFacebook':
-      $response = loginFacebook($GLOBALS['user']['id']);
+      $response = loginFacebook();
       break;
 
     case 'loginTwitter':
-      $response = loginTwitter($GLOBALS['user']['id']);
+      $response = loginTwitter();
       break;
 
     case 'checkUsername':
-      $response = usernameExists($GLOBALS['user']['id']);
+      $response = usernameExists();
       break;
 
     case 'confirm':
-      $response = confirmEmail($GLOBALS['user']['id']);
+      $route['code'] = input('code', 'string', 32, 32);
+      $response = confirmEmail('route' => $route);
       break;
 
     case 'resendConfirmation':
-      $response = resendConfirmation($GLOBALS['user']['id']);
+      $route['email'] = input('email', 'email', 1, 64);
+      $response = resendConfirmation('route' => $route);
       break;
 
   //gesture
@@ -320,6 +296,7 @@
 
 //Maintenance functions after user's connection has been let go
   header( "Connection: Close" );
+  transaction(array('function' => 'main.php'));
 
   //Update modified tables with default language translation
     if(isset($GLOBALS['translation_queue'])){
@@ -328,8 +305,12 @@
       }
     }
 
+
   //Cron job check
     //cron($db);
+
+  //Save transactions
+  newTransaction();
 
 //This section is devoted to an example of a recent challenge to current order of API/DB process/structure
   /* 

@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 12, 2016 at 10:59 PM
+-- Generation Time: Apr 22, 2016 at 02:37 AM
 -- Server version: 5.6.24
 -- PHP Version: 5.6.8
 
@@ -28,15 +28,12 @@ SET time_zone = "+00:00";
 
 CREATE TABLE IF NOT EXISTS `block` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `hash` varchar(64) NOT NULL,
-  `previous_block_hash` varchar(64) NOT NULL,
-  `time` int(11) unsigned NOT NULL,
-  `transaction` text NOT NULL,
-  `transaction_time` int(11) unsigned NOT NULL,
-  `dataview` text NOT NULL,
-  `statehash` varchar(32) NOT NULL,
-  `statechanged` text NOT NULL
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `transaction_duration` float unsigned NOT NULL,
+  `transactions` text NOT NULL,
+  `hash` varchar(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -47,11 +44,11 @@ CREATE TABLE IF NOT EXISTS `block` (
 
 CREATE TABLE IF NOT EXISTS `cache` (
   `id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `transaction` text CHARACTER SET utf8 NOT NULL,
-  `dataview` varchar(256) CHARACTER SET utf8 NOT NULL,
+  `relations` varchar(256) CHARACTER SET utf8 NOT NULL,
   `state` text CHARACTER SET utf8 NOT NULL,
-  `unsynchronized` int(11) unsigned NOT NULL
+  `time_unsynchronized` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -62,25 +59,29 @@ CREATE TABLE IF NOT EXISTS `cache` (
 
 CREATE TABLE IF NOT EXISTS `circle` (
   `id` int(11) unsigned NOT NULL,
-  `title` varchar(32) CHARACTER SET utf8 NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `description` varchar(128) CHARACTER SET utf8 NOT NULL,
-  `url` varchar(128) CHARACTER SET utf8 NOT NULL,
-  `type_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
-  `privilege_read` tinyint(1) DEFAULT '0',
-  `privilege_join` tinyint(1) unsigned DEFAULT '0',
-  `privilege_invite` tinyint(1) unsigned NOT NULL,
-  `privilege_encircle` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_edit` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_manage` tinyint(1) unsigned DEFAULT '0',
+  `title` varchar(64) CHARACTER SET utf8 NOT NULL,
+  `description` varchar(128) CHARACTER SET utf8 NOT NULL,
+  `type_id` int(11) unsigned NOT NULL,
+  `url` varchar(128) CHARACTER SET utf8 NOT NULL,
+  `privilege_read` tinyint(1) unsigned DEFAULT NULL,
   `privilege_reflect` tinyint(1) unsigned DEFAULT NULL,
   `privilege_value` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_join` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_invite` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_encircle` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_branch` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_represent` tinyint(1) unsigned NOT NULL,
+  `privilege_manage` tinyint(1) unsigned NOT NULL,
   `value_system` varchar(24) CHARACTER SET utf8 DEFAULT NULL,
   `circle_commoner_count` int(11) unsigned NOT NULL,
-  `content_circle_count` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL DEFAULT '0'
+  `circle_content_count` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL DEFAULT '0'
 ) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -91,21 +92,26 @@ CREATE TABLE IF NOT EXISTS `circle` (
 
 CREATE TABLE IF NOT EXISTS `circle_commoner` (
   `id` int(11) unsigned NOT NULL,
-  `circle_id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
-  `title` varchar(64) CHARACTER SET utf8 NOT NULL,
-  `inviting_user_id` int(11) unsigned NOT NULL,
+  `entity_id` int(11) unsigned NOT NULL,
   `time_invited` int(11) unsigned NOT NULL,
   `time_confirmed` int(11) unsigned NOT NULL,
-  `privilege_read` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_create` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_invite` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_edit` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_manage` tinyint(1) unsigned DEFAULT NULL,
   `privilege_reflect` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_vote` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_value` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_join` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_invite` int(11) unsigned NOT NULL,
+  `privilege_encircle` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_branch` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_represent` tinyint(1) unsigned NOT NULL,
+  `privilege_manage` tinyint(1) unsigned DEFAULT NULL,
   `mute_notifications` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL DEFAULT '0'
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -116,11 +122,16 @@ CREATE TABLE IF NOT EXISTS `circle_commoner` (
 
 CREATE TABLE IF NOT EXISTS `circle_nested` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `circle_id` int(11) unsigned NOT NULL,
-  `nested_circle_id` int(11) unsigned NOT NULL
+  `nested_circle_id` int(11) unsigned NOT NULL,
+  `inherit_privileges` tinyint(1) unsigned NOT NULL DEFAULT '0',
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -131,13 +142,16 @@ CREATE TABLE IF NOT EXISTS `circle_nested` (
 
 CREATE TABLE IF NOT EXISTS `circle_type` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `title` varchar(64) NOT NULL,
   `description` varchar(512) NOT NULL,
-  `removed` int(11) unsigned NOT NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -148,7 +162,8 @@ CREATE TABLE IF NOT EXISTS `circle_type` (
 CREATE TABLE IF NOT EXISTS `content` (
   `id` int(11) unsigned NOT NULL,
   `table_name` varchar(48) NOT NULL,
-  `entry_id` int(11) unsigned NOT NULL
+  `entry_id` int(11) unsigned NOT NULL,
+  `main_branch_id` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -159,14 +174,18 @@ CREATE TABLE IF NOT EXISTS `content` (
 
 CREATE TABLE IF NOT EXISTS `content_branch` (
   `id` int(11) unsigned NOT NULL,
-  `branch` varchar(64) NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `content_id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `title` varchar(64) NOT NULL,
+  `fork_content_id` int(11) unsigned NOT NULL,
   `fork_branch_id` int(11) unsigned NOT NULL,
   `fork_state_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `view_count` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -177,30 +196,16 @@ CREATE TABLE IF NOT EXISTS `content_branch` (
 
 CREATE TABLE IF NOT EXISTS `content_circle` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `circle_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
-  `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `content_keyword`
---
-
-CREATE TABLE IF NOT EXISTS `content_keyword` (
-  `id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
+  `circle_id` int(11) unsigned NOT NULL,
   `content_id` int(11) unsigned NOT NULL,
   `branch_id` int(11) unsigned NOT NULL,
-  `keyword_id` int(11) unsigned NOT NULL,
-  `frequency` float unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -211,14 +216,34 @@ CREATE TABLE IF NOT EXISTS `content_keyword` (
 
 CREATE TABLE IF NOT EXISTS `content_media` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `content_id` int(11) unsigned NOT NULL,
   `branch_id` int(11) unsigned NOT NULL,
-  `frame_id` int(11) unsigned NOT NULL,
+  `state_id` int(11) unsigned NOT NULL,
   `media_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `content_portal`
+--
+
+CREATE TABLE IF NOT EXISTS `content_portal` (
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -229,14 +254,21 @@ CREATE TABLE IF NOT EXISTS `content_media` (
 
 CREATE TABLE IF NOT EXISTS `content_privilege` (
   `id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
-  `privilege_read` tinyint(1) DEFAULT NULL,
-  `privilege_encircle` tinyint(1) DEFAULT NULL,
-  `privilege_reflect` tinyint(1) DEFAULT NULL,
-  `privilege_value` tinyint(1) DEFAULT NULL,
-  `privilege_edit` tinyint(1) DEFAULT NULL
+  `content_id` int(11) unsigned NOT NULL,
+  `branch_id` int(11) unsigned NOT NULL,
+  `privilege_read` tinyint(3) unsigned NOT NULL,
+  `privilege_reflect` tinyint(3) unsigned NOT NULL,
+  `privilege_value` tinyint(3) unsigned NOT NULL,
+  `privilege_encircle` int(10) unsigned NOT NULL,
+  `privilege_branch` int(10) unsigned NOT NULL,
+  `value_system` varchar(10) NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -247,11 +279,17 @@ CREATE TABLE IF NOT EXISTS `content_privilege` (
 
 CREATE TABLE IF NOT EXISTS `content_reflection` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `content_id` int(11) unsigned NOT NULL,
   `branch_id` int(11) unsigned NOT NULL,
   `state_id` int(11) unsigned NOT NULL,
-  `reflection_id` int(11) unsigned NOT NULL
+  `reflection_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -262,12 +300,16 @@ CREATE TABLE IF NOT EXISTS `content_reflection` (
 
 CREATE TABLE IF NOT EXISTS `content_state` (
   `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `content_id` int(11) unsigned NOT NULL,
   `branch_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
-  `field` varchar(32) CHARACTER SET utf8 NOT NULL,
-  `content` text CHARACTER SET utf8 NOT NULL,
-  `patch` text CHARACTER SET utf8 NOT NULL
+  `view_count` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -278,15 +320,20 @@ CREATE TABLE IF NOT EXISTS `content_state` (
 
 CREATE TABLE IF NOT EXISTS `content_translation` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `content_id` int(11) unsigned NOT NULL,
   `branch_id` int(11) unsigned NOT NULL,
   `state_id` int(11) unsigned NOT NULL,
-  `language_id` int(111) unsigned zerofill NOT NULL,
+  `language_id` int(11) unsigned NOT NULL,
   `googletranslated` tinyint(1) unsigned NOT NULL,
   `field` varchar(24) NOT NULL,
-  `content` text NOT NULL
+  `content` text NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -297,17 +344,59 @@ CREATE TABLE IF NOT EXISTS `content_translation` (
 
 CREATE TABLE IF NOT EXISTS `content_value` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_time` int(11) unsigned NOT NULL,
   `content_id` int(11) unsigned NOT NULL,
   `branch_id` int(11) unsigned NOT NULL,
   `state_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
   `keyword_id` int(11) unsigned NOT NULL,
   `value` int(3) NOT NULL,
   `value_system` varchar(24) CHARACTER SET utf8 NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `content_word`
+--
+
+CREATE TABLE IF NOT EXISTS `content_word` (
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `content_id` int(11) unsigned NOT NULL,
+  `branch_id` int(11) unsigned NOT NULL,
+  `state_id` int(11) unsigned NOT NULL,
+  `word_id` int(11) unsigned NOT NULL,
+  `keyword` tinyint(1) unsigned NOT NULL,
+  `frequency` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `entity`
+--
+
+CREATE TABLE IF NOT EXISTS `entity` (
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `circle_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -316,34 +405,17 @@ CREATE TABLE IF NOT EXISTS `content_value` (
 --
 
 CREATE TABLE IF NOT EXISTS `gesture` (
-  `id` int(11) NOT NULL
+  `id` int(11) NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `receiving_user_id` int(11) unsigned NOT NULL,
+  `receiving_entity_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `keyword`
---
-
-CREATE TABLE IF NOT EXISTS `keyword` (
-  `id` int(11) unsigned NOT NULL,
-  `language_id` int(11) unsigned NOT NULL,
-  `keyword` varchar(48) NOT NULL,
-  `frequency` int(11) unsigned NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `keyword_synonim`
---
-
-CREATE TABLE IF NOT EXISTS `keyword_synonim` (
-  `id` int(11) unsigned NOT NULL,
-  `keyword_id` int(11) unsigned NOT NULL,
-  `language_id` int(11) NOT NULL,
-  `synonim` varchar(64) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -366,11 +438,36 @@ CREATE TABLE IF NOT EXISTS `language` (
 
 CREATE TABLE IF NOT EXISTS `media` (
   `id` int(11) unsigned NOT NULL,
-  `type` varchar(12) NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `type_id` int(11) unsigned NOT NULL,
   `language_id` int(11) unsigned NOT NULL,
   `url` varchar(140) NOT NULL,
-  `encircled_count` int(11) unsigned NOT NULL,
-  `view_count` int(11) unsigned NOT NULL
+  `view_count` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `media_type`
+--
+
+CREATE TABLE IF NOT EXISTS `media_type` (
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `title` varchar(32) NOT NULL,
+  `type` varchar(16) NOT NULL,
+  `embed_template` text NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -381,10 +478,15 @@ CREATE TABLE IF NOT EXISTS `media` (
 
 CREATE TABLE IF NOT EXISTS `need` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
-  `need` varchar(48) NOT NULL
+  `title` varchar(48) NOT NULL,
+  `description` text NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -395,8 +497,9 @@ CREATE TABLE IF NOT EXISTS `need` (
 
 CREATE TABLE IF NOT EXISTS `place` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `title` varchar(64) CHARACTER SET utf8 NOT NULL,
   `description` varchar(256) CHARACTER SET utf8 NOT NULL,
@@ -405,7 +508,8 @@ CREATE TABLE IF NOT EXISTS `place` (
   `lat` float NOT NULL,
   `lng` float NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL DEFAULT '0'
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL DEFAULT '0'
 ) ENGINE=MyISAM AUTO_INCREMENT=27 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -416,13 +520,37 @@ CREATE TABLE IF NOT EXISTS `place` (
 
 CREATE TABLE IF NOT EXISTS `portal` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `place_id` int(11) unsigned NOT NULL,
-  `table_name` varchar(24) CHARACTER SET utf8 NOT NULL,
-  `entry_id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `title` varchar(48) CHARACTER SET utf8 NOT NULL,
+  `description` text CHARACTER SET utf8 NOT NULL,
   `time_open` int(11) unsigned NOT NULL,
-  `time_closed` int(11) unsigned NOT NULL
+  `time_closed` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM AUTO_INCREMENT=26 DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `portal_place`
+--
+
+CREATE TABLE IF NOT EXISTS `portal_place` (
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `portal_id` int(11) unsigned NOT NULL,
+  `place_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -432,12 +560,15 @@ CREATE TABLE IF NOT EXISTS `portal` (
 
 CREATE TABLE IF NOT EXISTS `post` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(10) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(10) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `title` varchar(140) NOT NULL,
   `content` text NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -448,12 +579,14 @@ CREATE TABLE IF NOT EXISTS `post` (
 
 CREATE TABLE IF NOT EXISTS `reflection` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `reflection` text NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -463,7 +596,14 @@ CREATE TABLE IF NOT EXISTS `reflection` (
 --
 
 CREATE TABLE IF NOT EXISTS `resource` (
-  `id` int(11) unsigned NOT NULL
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -487,12 +627,16 @@ CREATE TABLE IF NOT EXISTS `serverjob` (
 
 CREATE TABLE IF NOT EXISTS `site` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `title` varchar(64) CHARACTER SET utf8 NOT NULL,
   `description` varchar(512) CHARACTER SET utf8 NOT NULL,
-  `url` varchar(256) CHARACTER SET utf8 NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `domain` varchar(64) CHARACTER SET utf8 NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -503,12 +647,15 @@ CREATE TABLE IF NOT EXISTS `site` (
 
 CREATE TABLE IF NOT EXISTS `site_circle` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `site_id` int(11) unsigned NOT NULL,
   `circle_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -519,12 +666,17 @@ CREATE TABLE IF NOT EXISTS `site_circle` (
 
 CREATE TABLE IF NOT EXISTS `site_language` (
   `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
   `site_id` int(11) unsigned NOT NULL,
   `language_id` int(11) unsigned NOT NULL,
   `time` int(11) unsigned NOT NULL,
   `field` varchar(64) CHARACTER SET utf8 NOT NULL,
   `variant` varchar(32) CHARACTER SET utf8 NOT NULL,
-  `content` varchar(256) CHARACTER SET utf8 NOT NULL
+  `content` text CHARACTER SET utf8 NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -535,28 +687,38 @@ CREATE TABLE IF NOT EXISTS `site_language` (
 
 CREATE TABLE IF NOT EXISTS `site_namespace` (
   `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `site_id` int(11) unsigned NOT NULL,
+  `namespace` varchar(64) NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
   `circle_id` int(11) unsigned NOT NULL,
-  `name` varchar(64) NOT NULL,
-  `time` int(11) unsigned NOT NULL,
-  `time_updated` int(11) unsigned NOT NULL,
-  `removed` int(11) unsigned NOT NULL
+  `content_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `sphere`
+-- Table structure for table `site_notification`
 --
 
-CREATE TABLE IF NOT EXISTS `sphere` (
+CREATE TABLE IF NOT EXISTS `site_notification` (
   `id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
-  `title` varchar(128) CHARACTER SET utf8 NOT NULL,
-  `description` text CHARACTER SET utf8 NOT NULL,
-  `removed` int(11) unsigned NOT NULL
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+  `site_id` int(11) unsigned NOT NULL,
+  `user_id` int(11) unsigned NOT NULL,
+  `entity_id` int(11) unsigned NOT NULL,
+  `content_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -566,7 +728,7 @@ CREATE TABLE IF NOT EXISTS `sphere` (
 
 CREATE TABLE IF NOT EXISTS `user` (
   `id` int(11) unsigned NOT NULL,
-  `name` varchar(32) CHARACTER SET utf8 NOT NULL,
+  `namespace` varchar(32) CHARACTER SET utf8 NOT NULL,
   `username` varchar(32) CHARACTER SET utf8 DEFAULT NULL,
   `email` varchar(64) CHARACTER SET utf8 DEFAULT NULL,
   `email_confirmation_code` varchar(32) CHARACTER SET utf8 NOT NULL,
@@ -576,8 +738,9 @@ CREATE TABLE IF NOT EXISTS `user` (
   `password` varchar(32) CHARACTER SET utf8 DEFAULT NULL,
   `time_registered` int(11) unsigned DEFAULT NULL,
   `last_visit` int(11) unsigned DEFAULT NULL,
-  `site_language_id` int(11) unsigned NOT NULL,
-  `auth` varchar(32) CHARACTER SET utf8 DEFAULT NULL
+  `interface_language_id` int(11) unsigned NOT NULL,
+  `auth` varchar(32) CHARACTER SET utf8 DEFAULT NULL,
+  `auth_site_id` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM AUTO_INCREMENT=125 DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -589,7 +752,9 @@ CREATE TABLE IF NOT EXISTS `user` (
 CREATE TABLE IF NOT EXISTS `user_language` (
   `id` int(11) unsigned NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
-  `language_id` int(11) unsigned NOT NULL
+  `language_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -600,14 +765,84 @@ CREATE TABLE IF NOT EXISTS `user_language` (
 
 CREATE TABLE IF NOT EXISTS `user_message` (
   `id` int(11) unsigned NOT NULL,
-  `user_id` int(11) unsigned NOT NULL,
-  `recipient_user_id` int(11) unsigned NOT NULL,
-  `time` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
   `time_read` int(11) unsigned NOT NULL,
-  `table_name` varchar(64) CHARACTER SET utf8 NOT NULL,
-  `entry_id` int(11) unsigned NOT NULL,
-  `message` text CHARACTER SET utf8 NOT NULL
+  `recipient_user_id` int(11) unsigned NOT NULL,
+  `recipient_entity_id` int(11) unsigned NOT NULL,
+  `message` text CHARACTER SET utf8 NOT NULL,
+  `state_id` int(11) unsigned NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `word`
+--
+
+CREATE TABLE IF NOT EXISTS `word` (
+  `id` int(11) unsigned NOT NULL,
+  `language_id` int(11) unsigned NOT NULL,
+  `word` varchar(48) NOT NULL,
+  `frequency` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `word_synonim`
+--
+
+CREATE TABLE IF NOT EXISTS `word_synonim` (
+  `id` int(11) unsigned NOT NULL,
+  `word_id` int(11) unsigned NOT NULL,
+  `synonim_word_id` int(11) unsigned NOT NULL,
+  `language_id` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `_concept`
+--
+
+CREATE TABLE IF NOT EXISTS `_concept` (
+  `id` int(11) unsigned NOT NULL,
+  `time` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `state_id` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `_concept_branch`
+--
+
+CREATE TABLE IF NOT EXISTS `_concept_branch` (
+  `id` int(11) unsigned NOT NULL,
+  `time` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `nesting_concept_id` int(11) unsigned NOT NULL,
+  `nested_concept_id` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `_concept_word`
+--
+
+CREATE TABLE IF NOT EXISTS `_concept_word` (
+  `id` int(11) unsigned NOT NULL,
+  `concept_id` int(11) unsigned NOT NULL,
+  `word_id` int(11) unsigned NOT NULL,
+  `frequency` float NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -721,6 +956,21 @@ CREATE TABLE IF NOT EXISTS `_site_content` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `_sphere`
+--
+
+CREATE TABLE IF NOT EXISTS `_sphere` (
+  `id` int(11) unsigned NOT NULL,
+  `time` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `title` varchar(128) CHARACTER SET utf8 NOT NULL,
+  `description` text CHARACTER SET utf8 NOT NULL,
+  `removed` int(11) unsigned NOT NULL
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `_wormhole`
 --
 
@@ -746,7 +996,7 @@ ALTER TABLE `block`
 -- Indexes for table `circle`
 --
 ALTER TABLE `circle`
-  ADD PRIMARY KEY (`id`), ADD UNIQUE KEY `name` (`title`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `circle_commoner`
@@ -785,15 +1035,15 @@ ALTER TABLE `content_circle`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `content_keyword`
---
-ALTER TABLE `content_keyword`
-  ADD PRIMARY KEY (`id`);
-
---
 -- Indexes for table `content_media`
 --
 ALTER TABLE `content_media`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `content_portal`
+--
+ALTER TABLE `content_portal`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -812,7 +1062,7 @@ ALTER TABLE `content_reflection`
 -- Indexes for table `content_state`
 --
 ALTER TABLE `content_state`
-  ADD PRIMARY KEY (`id`), ADD KEY `field` (`field`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `content_translation`
@@ -827,9 +1077,15 @@ ALTER TABLE `content_value`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `keyword`
+-- Indexes for table `content_word`
 --
-ALTER TABLE `keyword`
+ALTER TABLE `content_word`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `entity`
+--
+ALTER TABLE `entity`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -842,6 +1098,12 @@ ALTER TABLE `language`
 -- Indexes for table `media`
 --
 ALTER TABLE `media`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `media_type`
+--
+ALTER TABLE `media_type`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -860,6 +1122,12 @@ ALTER TABLE `place`
 -- Indexes for table `portal`
 --
 ALTER TABLE `portal`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `portal_place`
+--
+ALTER TABLE `portal_place`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -911,9 +1179,9 @@ ALTER TABLE `site_namespace`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `sphere`
+-- Indexes for table `site_notification`
 --
-ALTER TABLE `sphere`
+ALTER TABLE `site_notification`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -932,6 +1200,30 @@ ALTER TABLE `user_language`
 -- Indexes for table `user_message`
 --
 ALTER TABLE `user_message`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `word`
+--
+ALTER TABLE `word`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `_concept`
+--
+ALTER TABLE `_concept`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `_concept_branch`
+--
+ALTER TABLE `_concept_branch`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `_concept_word`
+--
+ALTER TABLE `_concept_word`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -977,6 +1269,12 @@ ALTER TABLE `_site_content`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `_sphere`
+--
+ALTER TABLE `_sphere`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `_wormhole`
 --
 ALTER TABLE `_wormhole`
@@ -1010,7 +1308,7 @@ ALTER TABLE `circle_nested`
 -- AUTO_INCREMENT for table `circle_type`
 --
 ALTER TABLE `circle_type`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=4;
 --
 -- AUTO_INCREMENT for table `content`
 --
@@ -1027,14 +1325,14 @@ ALTER TABLE `content_branch`
 ALTER TABLE `content_circle`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT for table `content_keyword`
---
-ALTER TABLE `content_keyword`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
---
 -- AUTO_INCREMENT for table `content_media`
 --
 ALTER TABLE `content_media`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `content_portal`
+--
+ALTER TABLE `content_portal`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `content_privilege`
@@ -1062,9 +1360,14 @@ ALTER TABLE `content_translation`
 ALTER TABLE `content_value`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT for table `keyword`
+-- AUTO_INCREMENT for table `content_word`
 --
-ALTER TABLE `keyword`
+ALTER TABLE `content_word`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `entity`
+--
+ALTER TABLE `entity`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `language`
@@ -1075,6 +1378,11 @@ ALTER TABLE `language`
 -- AUTO_INCREMENT for table `media`
 --
 ALTER TABLE `media`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `media_type`
+--
+ALTER TABLE `media_type`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `need`
@@ -1091,6 +1399,11 @@ ALTER TABLE `place`
 --
 ALTER TABLE `portal`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=26;
+--
+-- AUTO_INCREMENT for table `portal_place`
+--
+ALTER TABLE `portal_place`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `post`
 --
@@ -1132,10 +1445,10 @@ ALTER TABLE `site_language`
 ALTER TABLE `site_namespace`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT for table `sphere`
+-- AUTO_INCREMENT for table `site_notification`
 --
-ALTER TABLE `sphere`
-  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+ALTER TABLE `site_notification`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `user`
 --
@@ -1150,6 +1463,26 @@ ALTER TABLE `user_language`
 -- AUTO_INCREMENT for table `user_message`
 --
 ALTER TABLE `user_message`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `word`
+--
+ALTER TABLE `word`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `_concept`
+--
+ALTER TABLE `_concept`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `_concept_branch`
+--
+ALTER TABLE `_concept_branch`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `_concept_word`
+--
+ALTER TABLE `_concept_word`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `_log`
@@ -1186,6 +1519,11 @@ ALTER TABLE `_report`
 --
 ALTER TABLE `_site_content`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `_sphere`
+--
+ALTER TABLE `_sphere`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
 --
 -- AUTO_INCREMENT for table `_wormhole`
 --
