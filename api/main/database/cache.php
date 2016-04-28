@@ -27,37 +27,44 @@
     	$db = $GLOBALS['db'];
     	$user_id = $GLOBALS['user_id'];
 
-    	if(isset($block['transaction']) && isset($block['relations']) && isset($block['state'])){
+    	if(isset($block['state']) && isset($block['cache-relations']) && isset($block['state'])){
 
     		$transaction = $block['transaction'];
-	    	$relations = json_encode($block['relations']);
-	    	$state = $block['state'] = json_encode($block['state']);
+	    	$relations = json_encode($block['cache-relations']);
+	    	$state = json_encode($block['state']);
 
-	    	$sql = "SELECT relations, state, unsynchronized_time FROM cache WHERE transaction = '{$transaction}')";
+	    	$timestamp = time();
+
+	    	$sql = "SELECT relations, state, time_unsynchronized FROM cache WHERE transaction = '{$transaction}')";
 
 	    	$result = mysqli_query($db, $sql);
 		    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
 		    	if($row['state'] != $state || $row['relations'] != $relations){
 	              	$sql = "UPDATE cache SET transaction = '{$transaction}', ".
+	              							"relations = '{$relations}', ".
 	              							"state = '{$state}', ".
-	              							"unsynchronized_time = 0, ".
-	              							"time = ".time()." ".
+	              							"time_unsynchronized = 0, ".
+	              							"time = {$timestamp} ".
 	              						"WHERE id = '{$row['id']}'";
 		    	} else {
-	              	$sql = "UPDATE cache SET unsynchronized_time = 0, time = ".time()." WHERE id = '{$row['id']}'";
+	              	if($row['time_unsynchronized'] > 0){ 
+	              		$sql = "UPDATE cache SET time_unsynchronized = 0, time = {$timestamp} WHERE id = '{$row['id']}'";
+	              	} else {
+	              		$sql = null;
+	              	}
 	            }
 		    } else {
 
-	          	$sql = "INSERT INTO cache (time, transaction, relations, state, unsynchronized_time) VALUES (".
-	          							time().', '.
+	          	$sql = "INSERT INTO cache (time, transaction, relations, state, time_unsynchronized) VALUES (".
+	          							"'{$timestamp}', ".
 	          							"'{$transaction}', ".
 	          							"'{$relations}', ".
 	          							"'{$state}', ".
 	          							"0); ";
 			}
 
-			if(!$row || ($row['unsynchronized_time'] < time() && $row['unsynchronized_time'] != 0)){
+			if($sql){
 		    	mysqli_query($db, $sql);
 			}
 		}
@@ -69,7 +76,7 @@
     function unsyncCacheBlocks($block){
 
     	$db = $GLOBALS['db'];
-      	$unsynchronize = $block['relations'];
+      	$unsynchronize = $block['cache-relations'];
 
     	if(is_array($unsynchronize)){
 			/*
@@ -99,10 +106,15 @@
 	    			//All caches with ("content.table_name" = "reflection" AND "content.entry_id" = "11") should be unsynchronized
 	    		}
 	    	}
-	    	$sql = "UPDATE cache SET unsynchronized_time = ".time()." WHERE ".implode(' OR ', $relations); //Outdating one row at a time, with OR in between
+	    	$sql = "UPDATE cache SET time_unsynchronized = ".time()." WHERE ".implode(' OR ', $relations); //Outdating one row at a time, with OR in between
 	    	mysqli_query($db, $sql);
     	}
     }
 
+	function mergeCache($merging, $merged){
 
+		$newBlock = array_merge($merging['cache']['relations'], $merged['cache']['relations']);
+
+		return $newBlock;
+	}
 ?>

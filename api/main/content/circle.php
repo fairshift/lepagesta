@@ -18,23 +18,18 @@
 
  		$db = $GLOBALS['db'];
  		$user_id = $GLOBALS['user']['id'];
- 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_represent or privilege_manage)
 
         $input = func_get_args();
 
         $route = 					(!isset($input['route'])) ? null : $input['route'];
-        //More than one way function flow goes
-		$route['circle_id'] =		(!$route['circle_id']) ? null : ksort($route['circle_id']);
         $route['dataset'] = 		(!$route['dataset']) ? '*' : ksort($route['dataset']);
 
         $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-        $block = 					(!$input['block']) ? null : $input['block'];
-    	$block['transaction'] = 	(!$block['transaction']) ? $transaction : $block['transaction'];
-
 	    if($user_id || $entity_id){
 
-		    if(!$buffer = existingCacheBlock($transaction){
+		    if(!$node = existingCacheBlock($transaction)){
 
 		        $sql_from[] = 	'circle';
 		        $sql_select[] = 'circle.*, circle.id AS circle_id, '.
@@ -47,11 +42,11 @@
 		    		if(is_array($route['circle_id'])){
 		    			foreach($route['circle_id'] AS $circle_id){
 		    				$sql_circle[] = "id = '{$circle_id}'";
-		    				$block['relations']['circle.circle_id'] = $route['circle_id'];
+		    				$node['relations']['circle.circle_id'] = $route['circle_id'];
 		    			}
 		    		} else {
 		    			$sql_circle[] = "id = '{$route['circle_id']}'";
-		    			$block['relations']['circle.circle_id'] = $route['circle_id'];
+		    			$node['relations']['circle.circle_id'] = $route['circle_id'];
 		    		}
 		    		$sql_where[] = '(' . implode(' OR ', $sql_circle) . ')';
 
@@ -69,7 +64,7 @@
 		            $sql_where[] =	"content_circle.branch_id = '{$route['branch_id']}' AND ".
 		            				'content_branch.id = content_circle.branch_id';
 
-				    $block['relations']['content_circle.branch_id'] = $route['content_id'];
+				    $node['relations']['content_circle.branch_id'] = $route['content_id'];
 
 		    	}
 		    	if($route['site_id']){ //... by site_id
@@ -85,7 +80,7 @@
 		            $sql_where[] =	"site_circle.site_id = '{$route['site_id']}' AND ".
 		                      		'site_circle.circle_id = circle.id';
 
-		    		$block['relations']['site_circle.site_id'] = $route['site_id'];
+		    		$node['relations']['site_circle.site_id'] = $route['site_id'];
 
 		    	}
 		    	if($route['user_id'] || $route['entity_id']){ //... either by user_id or by entity_id
@@ -99,46 +94,45 @@
 		                      			
 		            $sql_where[] =	'circle_commoner.circle_id = circle_id';
 
+		           	
 		    	}
 		    	if($route['user_id']){ //... by user_id
 
 		            $sql_where[] =	"circle_commoner.commoner_user_id = '{$route['user_id']}'";
 
-		    		$block['relations']['circle_commoner.commoner_user_id'] = $route['user_id'];
+		    		$node['relations']['circle_commoner.commoner_user_id'] = $route['user_id'];
 
 		    	}
 		    	if($route['entity_id']){ //... by entity_id
 
 		    		$sql_where[] =	"circle_commoner.commoner_entity_id = '{$route['entity_id']}'";
 
-		    		$block['relations']['circle_commoner.commoner_entity_id'] = $route['entity_id'];
+		    		$node['relations']['circle_commoner.commoner_entity_id'] = $route['entity_id'];
 
 		    	}
 		    	
 	        	$sql = 'SELECT ' . implode(', ', $sql_select) .' FROM ' . implode(', ', $sql_from) .' WHERE ' . implode(' AND ', $sql_where);
 		      	$result = mysqli_query($db, $sql);
 
-		      	while($row = mysqli_fetch_array($result, MYSQLI_ASSOC) && isAvailable($row)){
+		      	while($circle = mysqli_fetch_array($result, MYSQLI_ASSOC) && isAvailable('row' => $circle)){
 
 		      		//Get circle info, commoners, privileges & translations
-		      		$buffer['state'][$row['circle_id']] = 'getCircle';
-					$buffer = getCircle(array('route' => $route, 'block' => $buffer));
+		      		$node['state'][$circle['circle_id']] = getCircle(array('route' => $route, 'node' => $node));
 		        }
 
 				//Update cache with current block if calling function didn't pass state
-				if(!$block['state'] && !in_array(array('status_code' => '400'), $buffer['state'])){
-		    		updateCacheBlock($block);
+				if(!$node['state'] && !in_array(array('status_code' => '400'), $node['state'])){
+		    		updateCacheBlock($node);
 		    	}
 			}
 
-	  		$block = mergeBlocks('getCircles', $block, $buffer); //Merge current block with one delivered by calling function
-	        transaction(array('function' => __FUNCTION__)); //End current function's transaction
+	        transaction(array('transaction' => $transaction)); //End current function's transaction
 
-	    	return $block;
+	    	return $node;
 	    }
   	}
 
-	function getCircle(){ //Shares block stream with getBranches and availablePrivileges
+	function getCircle(){
 
  		$db = $GLOBALS['db'];
  		$user_id = $GLOBALS['user']['id'];
@@ -152,31 +146,26 @@
 
         $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-        $block = 					(!$input['block']) ? null : $input['block'];
-    	$block['transaction'] = 	(!$block['transaction']) ? $transaction : $block['transaction'];
+        $node = 					(!$input['node']) ? null : $input['node'];
+    	$node['transaction'] = 		(!$node['transaction']) ? $transaction : $node['transaction'];
 
 		if($route['circle_id']){
 
-		    if(!$buffer = existingCacheBlock($transaction)){
+		    if(!$node['state'] = existingCacheBlock($transaction)){ //If/when encryption happens, engagement within a circle could provide public keys for content (through enacted values?)
 
 		    	//Circle's details
-		    	$buffer['state'] = 'getContent';
-		    	$buffer = getContent( array('route' => array('table_name' => 'circle', 'entry_id' => $route['circle_id']), 
-		    								'block' => $buffer) );
+		    	$node['state'] = getContent(array('route' => array('table_name' => 'circle', 'entry_id' => $route['circle_id']) );
 
-				//Type
-				$buffer['state']['type'] = 'getContent';
-		    	$buffer = getContent( array('route' => array('table_name' => 'circle_type', 'entry_id' => $buffer['state']['type_id']),  
-		    								'block' => $buffer) );
+				//Circle type
+				$node['state']['type'] = getContent( array(	'route' => array('table_name' => 'circle_type', 'entry_id' => $buffer['state']['type_id']) );
 
 		    	if(in_array('commoners', $route['dataset']) || $route['dataset'] = '*'){
-		    		$buffer['state']['commoners'] = 'getCommoners';
-				    $buffer = getCommoners(	array('route' => $route, 
-		    									  'block' => $buffer) );
+		    		$buffer['state']['commoners'] = getCommoners(array(	'route' => $route, 
+		    									  						'block' => $buffer) );
 			    }
 
 				//Update cache with current block if calling function didn't pass state
-				if(!$block['state'] && !in_array(array('status_code' => '400'), $buffer['state'])){
+				if(!isset($input['parent-cache']) && is_array($node['cache-relations']) && !in_array(array('status_code' => '400'), $node['state'])){
 		    		updateCacheBlock($block);
 		    	}
 			}

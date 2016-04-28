@@ -6,11 +6,8 @@
         $input = func_get_args();
 
         //When function starts
-        if($input['function'] && $input['route']){
-
+        if($input['function']){
     		$transaction = $input['function'].'('.json_encode($input['route']).')';
-    		$buffer = 
-
     		$GLOBALS['transactions'][$transaction] = array(microtime() => array('route' => $input['route']));
         }
 
@@ -74,8 +71,8 @@
 				- transaction_duration - how much time processing took (microseconds)
 				- hash - !!! to-do - merkletree hash of "transactions" & previous block's hash
 
-				* well, it's not exactly blockchain... it doesn't provide data validity check
-					- while transactions table can provide details into every change made (outside of block table), hashes are not mirrored on a distributed database
+				* well, it's not exactly blockchain... it doesn't provide data validity check on programmatic level (yet)
+					- while transactions table can provide details into every change made (outside of block table), merkletree sequence of hashes isn't mirrored in a distributed database
 					- thus, consensus for block validity isn't distributed among peers
 					- furthermore, transactions can't be validated by repeating functions on top of stateroot
 			*/
