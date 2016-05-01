@@ -7,56 +7,61 @@
 
     $input = func_get_args();
 
-    //Function router $db, $id, $selector, $preset
-    $route = ksort($input['route']);  //selector - necessary
-                                      //id - necessary
-    
-    $selector = $route['selector'];
-    $id = $route['id'];
+    //Function router
+    $route = ksort($input['route']);
 
-    $dataset = (!$input['dataset']) ? '*' : ksort($input['dataset']); //necessary
+    $dataset = (!$input['dataset']) ? '*' : ksort($input['dataset']);
 
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+    $query['transaction'] = ($input['parent-transaction']) ? $input['parent-transaction'] : $transaction;
 
-    if(in_array("auth", $dataset)){
-      $select = "id, id AS user_id, username, email, time_registered, time_visited, time_email_confirmed, facebook_user_id, twitter_user_id, interface_language_id, auth, auth_time";
-    } elseif(in_array("me", $dataset)){
-      $select = "id, id AS user_id, auth, password, username, email, email_confirmation_code, time_email_confirmed, time_registered, time_visited, facebook_user_id, twitter_user_id, interface_language_id";
-    } elseif(in_array("avatar", $dataset)){
-      $select = "id, id AS user_id, auth, password, username, time_email_confirmed, time_registered, time_visited, facebook_user_id, twitter_user_id, interface_language_id";
+    if($route['auth']){
+      $where = "auth = '{$route['auth']}'";
+    } elseif($route['user_id']){
+      $where = "id = '{$route['user_id']}'";
+    } elseif($route['email']){
+      $where = "email = '{$route['email']}'";
+    } elseif($route['username']){
+      $where = "username = '{$route['username']}'";
+    } elseif($route['email_confirmation_code']){
+      $where = "email_confirmation_code = '{$route['email_confirmation_code']}'";
+    } elseif($route['facebook_user_id']){
+      $where = "facebook_user_id = '{$route['facebook_user_id']}'";
+    } elseif($route['twitter_user_id']){
+      $where = "twitter_user_id = '{$route['twitter_user_id']}'";
     }
 
-    if($selector == 'auth'){
-      $where = "auth = '{$id}'";
-    } elseif($selector == 'user_id'){
-      $where = "id = '{$id}'";
-    } elseif($selector == 'email'){
-      $where = "email = '{$id}'";
-    } elseif($selector == 'username'){
-      $where = "username = '{$id}'";
-    } elseif($selector == 'email_confirmation_code'){
-      $where = "email_confirmation_code = '{$id}'";
-    } elseif($selector == 'facebook_user_id'){
-      $where = "facebook_user_id = '{$id}'";
-   	} elseif($selector == 'twitter_user_id'){
-      $where = "twitter_user_id = '{$id}'";
-   	}
+    if( ($user_id || $entity_id) && $where ){
 
-    $sql = "SELECT $select FROM user WHERE $where";
- 
-    $result = mysqli_query($db, $sql);
-    if($node['state'] = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+      if(!$query = existingCache($transaction)){ //isset($input['parent-transaction'])... does this make sense in terms of optimization?
 
-      $node['relations']['user.user_id'] = $node['state']['user_id'];
-      $node['state']['circles'] = getCirclesBy(array('route' => array('user_id' => $route['user_id']), 'block' = $buffer));
+        if($where){
+          $sql = "SELECT * FROM user WHERE $where";
+       
+          $result = mysqli_query($db, $sql);
+          if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
-      $response = $node;
-    } else {
-      $response = false;
+            $query['response'] = safeProfileData($row);
+            $query['response']['circles'] = getCirclesBy(array('route' => array('user_id' => $row['id'])));
+
+            $query['cache-relations']['user.id'] = $row['id'];
+          }
+
+          //Update cache with state(s) of content - if calling function didn't set parent-cache and everything else went okay
+          if(is_array($query['cache-relations']) && !in_array(array('status_code' => '400'), $query['response'])){
+            updateCache($query);
+          }
+        } else {
+
+          $query['response']['status_code'] = '400';
+        }
+      } else {
+        $GLOBALS['nodes'] = array_merge($GLOBALS['nodes'], $query['nodes']);
+      }
     }
 
     transaction(array('transaction' => $transaction));
 
-    return $response;
+    return $query;
   }
 ?>

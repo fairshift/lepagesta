@@ -1,10 +1,10 @@
 <?php
-//Entity is a circle which can behave as one actor
+//Entity is a circle, which is registered as an entity (allowing privileged users to take actions on its behalf)
 
   function getEntity(){
 
     $db = $GLOBALS['db'];
- 	  $site_id = $GLOBALS['site_id'];
+ 	  $site_id = $GLOBALS['site']['id'];
  	  $user_id = $GLOBALS['user_id'];
 
     if(in_array("auth", $preset)){

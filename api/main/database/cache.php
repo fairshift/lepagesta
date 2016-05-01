@@ -1,66 +1,73 @@
 <?php
-//Cache works more efficiently when table has less entries and is therefore cleared after a set amount of time, while blocks stay in chain forever unmodified
-	//An examplary difference of how number of entries among blockchain and cache might differ (in a small database)
+//Cache works more efficiently when table has less entries and is therefore cleared after a set amount of time, while querys stay in chain forever unmodified
+	//An examplary difference of how number of entries among querychain and cache might differ (in a small database)
 		//Blockchain length ------------------------------------------------------
 		//Cache length	 	----
 
-  //Get existing cache block - is holding cached datasets & their states for specific functions & inputs
-    function existingCacheBlock($transaction){
+  //Get existing cache - is holding cached datasets & their states for specific functions & inputs
+    function existingCache($transaction){
 
     	$db = $GLOBALS['db'];
 
-    	$sql = "SELECT relations, state FROM cache WHERE transaction = '{$transaction}' AND (unsynchronized_time > ".time()." OR unsynchronized_time = 0)";
+    	$sql = "SELECT relations, response, nodes FROM cache WHERE transaction = '{$transaction}' AND (unsynchronized_time > ".time()." OR unsynchronized_time = 0)";
 	    $result = mysqli_query($db, $sql);
 	    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
-	    	$block['transaction'] = $transaction;
-	    	$block['relations'] = json_decode($row['relations']);
-	    	$block['state'] = json_decode($row['state']);
-	    	return $block;
+	    	$query['cache-relations'] = json_decode($row['relations']);
+	    	$query['response'] = json_decode($row['response']);
+	    	$query['nodes'] = json_decode($row['nodes']);
+
+	    	mysqli_query($db, "UPDATE cache SET time_called = ".time().", usage_count = '".($row['usage_count'] + 1)."' WHERE id = '{$row['id']}'");
+
+	    	return $query;
 	    } else {
 	    	return null;
 	    }
     }
 
   //When datasets & their states are not cached, specific functions & inputs can store these for later reuse
-    function updateCacheBlock($block){
+    function updateCache($query){
 
     	$db = $GLOBALS['db'];
     	$user_id = $GLOBALS['user_id'];
 
-    	if(isset($block['state']) && isset($block['cache-relations']) && isset($block['state'])){
+    	if(isset($query['cache-relations']) && isset($query['response']) && isset($query['nodes'])){
 
-    		$transaction = $block['transaction'];
-	    	$relations = json_encode($block['cache-relations']);
-	    	$state = json_encode($block['state']);
+    		$transaction = $query['transaction'];
+	    	$relations = json_encode($query['cache-relations']);
+	    	$response = json_encode($query['response']);
+	    	$nodes = json_encode($GLOBALS['cache-nodes'][$transaction]);
 
 	    	$timestamp = time();
 
-	    	$sql = "SELECT relations, state, time_unsynchronized FROM cache WHERE transaction = '{$transaction}')";
+	    	$sql = "SELECT relations, response, nodes, time_unsynchronized FROM cache WHERE transaction = '{$transaction}')";
 
 	    	$result = mysqli_query($db, $sql);
 		    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
-		    	if($row['state'] != $state || $row['relations'] != $relations){
+		    	if($row['relations'] != $relations || $row['response'] != $response || $row['nodes'] != $nodes){
 	              	$sql = "UPDATE cache SET transaction = '{$transaction}', ".
 	              							"relations = '{$relations}', ".
-	              							"state = '{$state}', ".
+	              							"response = '{$response}', ".
+	              							"nodes = '{$nodes}', ".
 	              							"time_unsynchronized = 0, ".
-	              							"time = {$timestamp} ".
+	              							"time_updated = {$timestamp} ".
 	              						"WHERE id = '{$row['id']}'";
 		    	} else {
 	              	if($row['time_unsynchronized'] > 0){ 
-	              		$sql = "UPDATE cache SET time_unsynchronized = 0, time = {$timestamp} WHERE id = '{$row['id']}'";
+	              		$sql = "UPDATE cache SET time_unsynchronized = 0, time_updated = {$timestamp} WHERE id = '{$row['id']}'";
 	              	} else {
 	              		$sql = null;
 	              	}
 	            }
 		    } else {
 
-	          	$sql = "INSERT INTO cache (time, transaction, relations, state, time_unsynchronized) VALUES (".
+	          	$sql = "INSERT INTO cache (time_created, time_updated, transaction, relations, response, nodes, time_unsynchronized) VALUES (".
+	          							"'{$timestamp}', ".
 	          							"'{$timestamp}', ".
 	          							"'{$transaction}', ".
 	          							"'{$relations}', ".
-	          							"'{$state}', ".
+	          							"'{$response}', ".
+	          							"'{$nodes}', ".
 	          							"0); ";
 			}
 
@@ -69,23 +76,25 @@
 			}
 		}
 
+  		$GLOBALS['nodes'] = array_merge($GLOBALS['nodes'], $GLOBALS['cache-nodes'][$transaction]);
+
 	    return true;
     }
 
   //Data entries that have been modified are unsynchronized by matching dataview
-    function unsyncCacheBlocks($block){
+    function unsyncCache($query){
 
     	$db = $GLOBALS['db'];
-      	$unsynchronize = $block['cache-relations'];
+      	$unsynchronize = $query['cache-relations'];
 
     	if(is_array($unsynchronize)){
 			/*
 			USAGE EXAMPLE:
 			User was included in a circle:
-				$block['relations']['circle_commoner.commoner_user_id'] = $route['user_id'];
+				$query['relations']['circle_commoner.commoner_user_id'] = $route['user_id'];
 
 			Entity was included in a circle:
-				$block['relations']['circle_commoner.commoner_entity_id'] = $route['entity_id'];
+				$query['relations']['circle_commoner.commoner_entity_id'] = $route['entity_id'];
 
 			Content was updated
 				$updated['93204a0sddk3304kf0']['content.table_name'] = 'reflection';
@@ -113,8 +122,12 @@
 
 	function mergeCache($merging, $merged){
 
-		$newBlock = array_merge($merging['cache']['relations'], $merged['cache']['relations']);
+		$merging['cache-relations'] = array_merge($merging['cache-relations'], $merged['cache-relations']);
 
-		return $newBlock;
+		return $merging;
 	}
+
+	/*function globalCache($){
+
+	}*/
 ?>

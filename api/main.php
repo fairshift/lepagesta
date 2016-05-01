@@ -80,6 +80,7 @@
   $response['user'] = safeProfileData($GLOBALS['user']); //$response['user']['status']; equals 'welcome' when user is confirmed (email, Facebook, Twitter)
 
 //JSON response
+  $response['nodes'] = $GLOBALS['nodes']; //reusable array to reduce data replication overhead
   if(isset($response)){
     echo json_encode($response);
   }
@@ -99,5 +100,5 @@
   //cron($db);
 
 //Save transactions
-  newTransaction();
+  toBlockchain();
 ?>

@@ -2,7 +2,7 @@
 
 //Social media based authentication & more (not currently)
   //Facebook login
-    if(!empty($_GET['code']) && !empty($_GET['state']) 
+    if(!empty($_GET['code']) && !empty($_GET['response']) 
       && !empty($_SESSION['social_login_user_id'])){
         loginFacebook();
     }
@@ -14,9 +14,9 @@
 
 //Authentication & user profile data
   $GLOBALS['user'] = authenticate(input( 'auth', 'md5', 32, 32 ), input( 'entity_id', 'integer', 1, 11 ));
-  if(!isset($_REQUEST['call'])){
+  /*if(!isset($_REQUEST['call'])){
     $GLOBALS['user']['profile'] = array_merge($GLOBALS['user'], getUserProfile($GLOBALS['user']['id']));
-  }
+  }*/
   $response['user'] = $GLOBALS['user'];
 
 //Entity - circle privileges !!! to-do
@@ -28,12 +28,11 @@
     $route['auth'] = input('auth', 'string', 32, 32);
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    $auth = $route['auth'];
-    $newUser = false; //in case authentication code doesn't match, this triggers a new anonymous account (valid as long as cookie is available)
+    $newUser = false; //in case authentication code doesn't match, this triggers a new anonymous account (auth cookie validation)
 
     if($route['auth']){
 
-      $user = getUser('route' => array('selector' => 'auth', 'id' => $route['auth'], 'dataset' => array('me')))['state'];
+      $user = getUser('route' => array('auth' => $route['auth']))['response'];
 
       if(isset($user['id'])){
 
@@ -46,8 +45,8 @@
           $user['confirmed'] = false;
         }
 
+        mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
         mysqli_query($db, "UPDATE user SET time_visited = '".time()."' WHERE auth = '{$route['auth']}'");
-        $statechanges['user.id']['time_visited'] = time();
 
       } else {
         $newUser = true;
@@ -62,8 +61,7 @@
                   "'".time()."', "
                   "'".time()."'" );
 
-      $user = getUser('route' => array('selector' => 'auth', 'id' => $auth, 'dataset' => array('me')))['state'];
-      $statechanges = $user;
+      $user = getUser('route' => array('auth' => $route['auth']))['response'];
     }
 
     transaction(array('transaction' => $transaction, 'statechanges' => $statechanges));
@@ -110,7 +108,7 @@
 
     if($user_id > 0 && filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL) == urldecode($_REQUEST['email'])){
 
-      $row = getUser('route' => array('selector' => 'email', 'id' => $route['email'], 'dataset' => array('auth')))['state'];
+      $row = getUser('route' => array('email' => $route['email']))['response'];
 
       if($row['id'] && strlen($row['password']) == 32 && $row['time_email_confirmed'] > 0){
          $response = "signin";
@@ -137,7 +135,7 @@
 
     if($user_id && $route['username']){
 
-      $row = getUser('route' => array('selector' => 'username', 'id' => $route['username'], 'dataset' => array('auth')))['state'];
+      $row = getUser('route' => array('username' => $route['username'])['response'];
 
       if($row['id'] > 0){
         $response['status'] = "exists";
@@ -158,12 +156,13 @@
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    if(!getUser('route' => array('selector' => 'email', 'id' => $route['email']), 'dataset' => array('auth'))['state']['user_id'] 
+    if(!getUser('route' => array('route' => ('email' => $route['email']), 'dataset' => 'user')['response']['id'] 
       && $route['password'] == $route['password_confirm'] 
-      && !getUser('route' => array('selector' => 'username', 'id' => $route['username']), 'dataset' => array('auth'))['state']['user_id'] 
+      && !getUser('route' => array('route' => ('username', 'id' => $route['username']), 'dataset' => 'user')['response']['id'] 
     ){
 
       $email_confirmation_code = md5("LOL%I=ISUP".microtime());
+    
       $sql = "INSERT INTO user (username, password, email, time_registered, email_confirmation_code, time_email_confirmed, time_visited) VALUES (".
                   "'".$route['username']."', ".
                   "'".md5($route['password'])."', ".
@@ -176,10 +175,10 @@
 
       mailer($route['email'], array('email_confirmation_code' => $email_confirmation_code, 'username' => $route['username']), 'confirmation');
 
-      $user = getUser('route' => array('selector' => 'auth', 'id' => $auth), 'dataset' => array('me'))['state'];
+      $user = getUser('route' => array('selector' => 'auth', 'id' => $auth))['response'];
     }
 
-    transaction(array('transaction' => $transaction, 'statechanges' => $user));
+    transaction(array('transaction' => $transaction));
 
     return $user;
   }
@@ -191,24 +190,19 @@
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    if($user_id && $route['code']){
-      $user = getUser('route' => array('selector' => 'email_confirmation_code', 'id' => $route['code']), 'dataset' => array('auth'))['state'];
-      if($user){
+    if($user_id && $route['code'] && getUser('route' => array('selector' => 'email_confirmation_code', 'id' => $route['code']), 'dataset' => 'user')['response']['id']){
 
-        $sql = "UPDATE user SET time_email_confirmed = '".time()."' $sql_site WHERE id = {$user['id']}";
-        mysqli_query($db, $sql);
+      $sql = "UPDATE user SET time_email_confirmed = '".time()."' $sql_site WHERE id = {$user['id']}";
+      mysqli_query($db, $sql);
 
-        $time = time();
+      $time = time();
 
-        $user['time_email_confirmed'] = $time;
-        $response['status'] = 'welcome';
-        $response['user'] = $user;
-
-        $statechanges['time_email_confirmed'] = $time;
-      }
+      $user['time_email_confirmed'] = $time;
+      $response['status'] = 'welcome';
+      $response['user'] = $user;
     }
 
-    transaction(array('transaction' => $transaction, 'statechanges' => $statechanges));
+    transaction(array('transaction' => $transaction));
 
     return $response;
   }
@@ -220,7 +214,7 @@
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    $user = getUser('route' => array('selector' => 'email', 'id' => $route['email']) 'dataset' => array('auth'))['state'];
+    $user = getUser('route' => array('email' => $route['email']), 'dataset' => array('auth'))['response'];
 
     if($user['email_confirmation_code'] > 0 && $user['time_email_confirmed'] == 0){
       mailer($route['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'username' => $user['username']), 'confirmation');
@@ -239,7 +233,7 @@
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    $user = getUser('route' => array('selector' => 'email', 'id' => $route['email'], 'dataset' => array('auth')))['state'];
+    $user = getUser('route' => array('email' => $route['email']), 'dataset' => array('auth'))['response'];
 
     if($user_id && md5($route['password']) == $user['password']){
 
@@ -250,8 +244,6 @@
 
       $sql = "UPDATE user SET time_visited = '{$time}' WHERE id = {$user['id']}";
       mysqli_query($db, $sql);
-
-      $statechanges['user.id'] = '{$time}';
 
       $response = $user;
     } else {
@@ -283,7 +275,7 @@
         $sql = "UPDATE user WHERE id = '{$row['id']}' SET auth = '$auth', last_visit = '$time', email_confirmed = '$time', email_confirmation_code = email_confirmation_code";
         mysqli_query($db, $sql);
 
-        $user = getUser('route' => array('selector' => 'auth', 'id' => $auth, 'dataset' => array('auth')))['state'];
+        $user = getUser('route' => array('selector' => 'auth', 'id' => $auth, 'dataset' => array('auth')))['response'];
 
         $response = $user;
       }

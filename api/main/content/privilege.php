@@ -1,29 +1,50 @@
 <?php
 
-	$GLOBALS['privileges'] = array('read', 'reflect', 'value', 'join', 'invite', 'encircle', 'branch', 'manage');
+	$GLOBALS['privileges'] = array('read', 'reflect', 'value', 'join', 'invite', 'encircle', 'line', 'edit', 'represent', 'manage');
 
-	//Privileges hierarchy: Author > Commoner (NULL defaults to whichever the greater influence from Content's & Circle's privileges is)
-	function availablePrivileges(){
+    function isAvailable(){ //returns if data state (table) is available, taking into account removals and read privilege set by author(s), circle(s) and possibly, encryption
 
-		$db, $user_id, $content_privileges, $content_circles, $author = null
+    	//If this was a distributed blockchain database, data could be distributed among users running their nodes (in turn defining availability)
+    	//Idea: if data was encrypted, engagement within a circle could unlock public keys for content decryption (perhaps through enacted values?)
 
  		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
 
-        $input = renderInput(func_get_args());
+        $input = func_get_args();
 
- 		$user_id = $GLOBALS['user_id'];
+        $access = false;
 
-        $input['branch_id'] = 				(!$input['branch_id']) ? null : $input['branch_id']; //optional call of content branch
+    	//Data node !!! this part  by (d)encryptions of data by users / entities (private-public key pairs, partial public keys)
+    	if($row = $input['row']){
+	      	if($row['time_removed'] == 0){ //privileges for removed data are different (sufficient?)
+	      		$access = true;
+	      	} else {
+	      		if($input['row']['user_id'] == $user_id || $input['row']['entity_id'] == $entity_id){
+		      		$access = true;
+		      	}
+	      	}
+    	}
+    	if(is_array($input['circles']) && $input['privileges']){
+    		availablePrivileges(array('circles' => $circles, 'privileges' => $input['privileges']));
+    	}
 
-        $input['history'] = 				(!$input['history']) ? '1' : $input['history'];
+    	return $access;
+	}
 
-        $block = 							(!$input['block']) ? null : $input['block'];
-    	$block['time'] = 					(!$input['block']) ? microtime() : $input['block']['time'];
-    	$block['transaction'] = 			(!$input['block']) ? formatTransaction(__FUNCTION__, $input) : $input['block']['transaction'];
-    	$block['state'] = 					(!$input['block']['state']) ? null : $input['block']['state'];
+	//Privileges hierarchy: Content author > Commoner > Circle (NULL defaults to whichever the greater influence from Content's & Circle's privileges is)
+	function availablePrivileges(){
 
-		//Clash: circle privileges & content privileges as set by author
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
 
+        $input = func_get_args();
+
+        //Function router
+    	$route = ksort($input['route']);
+
+    	if($input['circles'])
 		foreach($GLOBALS['privileges'] AS $privilege){
 
 			if($author && $privilege == 'read', 'join', ''){
@@ -55,24 +76,4 @@
 			}
 		}
 	}
-
-	/*function getBranchPrivileges(){ //accepting spiral idea flow
-
- 		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user_id'];
-
-        $input = renderInput(func_get_args());
-
-        $input['branch_id'] = 				(!$input['branch_id']) ? null : $input['branch_id']; //optional
-
-        $block = 							(!$input['block']) ? null : $input['block'];
-    	$block['time'] = 					(!$input['block']) ? microtime() : $input['block']['time'];
-    	$block['transaction'] = 			(!$input['block']) ? formatTransaction(__FUNCTION__, $input) : $input['block']['transaction'];
-    	$block['state'] = 					(!$input['block']['state']) ? null : $input['block']['state'];
-
-       	foreach($buffer['state']['getContentBranches'] AS $branch_id => $branch){
-
-       	}
-	}*/
-
 ?>

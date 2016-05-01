@@ -1,4 +1,22 @@
 <?php
+	$GLOBALS['errorCodes'] = array('400');
+
+	function errors($array){
+
+		$errors = null;
+
+		foreach($GLOBALS['errorCodes'] AS $code){
+			if(in_array($code, $array)){
+				if($errors == null){
+					$errors = [];
+				}
+				$errors[] = $code;
+			}
+		}
+
+		return $errors;
+	}
+
 	function array_search_path($needle, array $haystack, array $path = []) { //http://stackoverflow.com/questions/27151958/searching-for-a-value-and-returning-its-path-in-a-nested-associative-array-in-ph
 	    foreach ($haystack as $key => $value) {
 	        $currentPath = array_merge($path, [$key]);

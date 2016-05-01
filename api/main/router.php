@@ -23,7 +23,7 @@
       break;
 
     case 'blog':
-      if($GLOBALS['f'] == 'add'){
+      /*if($GLOBALS['f'] == 'add'){
         if(!input('branch_id', 'integer', 1, 11)){
 
           //Add new content
@@ -56,7 +56,7 @@
       if($GLOBALS['f'] == 'get'){
         //get what's visible in current circle?
         //getContent();
-      }
+      }*/
       break;
 
     case 'nameSpace': //user/content_state OR circle/content_branch (combinations among user & circle and content_branch & content_state) 
@@ -75,12 +75,12 @@
       break;
 
     case 'profile':
-      $structure = array('languages','messages','projects','spheres');
-      $response = getProfile($db, $user, $structure);
+      /*$structure = array('languages','messages','projects','spheres');
+      $response = getProfile($db, $user, $structure);*/
       break;
 
     case 'place':
-      if($GLOBALS['f'] == 'map'){
+      /*if($GLOBALS['f'] == 'map'){
 
         if(!input('place_id', 'integer', 1, 11)){
           $place['user_id']       = $GLOBALS['user']['id'];
@@ -99,12 +99,12 @@
           $place['time_updated']  = time();
         }
         $response = mapPlace($db, $GLOBALS['user']['id'], $place, $GLOBALS['language_id']);
-      }
+      }*/
       break;
 
   //Event horizon
     case 'portal':
-      if($GLOBALS['f'] == 'open'){
+      /*if($GLOBALS['f'] == 'open'){
 
         if(!input('place_id', 'integer', 1, 11)){
           $place['user_id']       = $GLOBALS['user']['id'];
@@ -127,12 +127,12 @@
         $portal['time_closed']  = (strtotime(input('time_closed', 'string', 1)) === false) ? time() + 86400 : strtotime(input('time_closed'));
 
         $response = openPortal($db, $GLOBALS['user']['id'], $portal, $GLOBALS['language_id']);
-      }
+      }*/
       break;
 
   //Site language - adjusts to user language
     case 'siteText':
-      $response = siteText($GLOBALS['site_id']);
+      $response = siteText($GLOBALS['site']['id']);
       break;
 
     case 'languages':

@@ -1,54 +1,77 @@
 <?php
 
-  //As functions querying the database are called, their stamp is attached to the transaction block
+  //As functions querying the database are called, their timestamp is stored
+  //Functions that modify the database leave their full stamp
+  //Functions that don't modify the database are merged by their name
+
+ 	$GLOBALS['allTransactionsLogged'] = false; //useful: gathering data for optimization
+
   	function transaction(){
 
         $input = func_get_args();
 
         //When function starts
         if($input['function']){
-    		$transaction = $input['function'].'('.json_encode($input['route']).')';
-    		$GLOBALS['transactions'][$transaction] = array(microtime() => array('route' => $input['route']));
+        	$keys['function'] = $input['function'];
+        	if(is_array($input['route'])){
+        		$keys['route'] = ksort($input['route']);
+        		if(is_array($keys['route']['language_id'])){
+        			$keys['route']['language_id'] = ksort($keys['route']['language_id']);
+        		}
+        	}
+        	if(is_array($input['dataset'])){
+        		$keys['dataset'] = ksort($input['dataset']);
+        	}
+    		$transaction = json_encode($keys);
+    		$GLOBALS['transactions'][$transaction][]['start'] = microtime();
         }
 
         //When function closes
-        if($input['transaction']){
+        if($input['transaction'] && isset($GLOBALS['transactions'][$input['transaction']])){
 
         	//In case more than one transaction with same parameters was called...
-			foreach($GLOBALS['transactions'][$transaction] AS $start => $array){ 
-				if(!$array['duration']){ //If transaction wasn't closed yet...
-					$last_start = $start; //Last to open closes first (because of possible nested functions)
+			foreach($GLOBALS['transactions'][$input['transaction']] AS $key => $array){ 
+				if(!$array['duration']){
+
+					//Find transaction that wasn't closed yet... last to open closes first (in case of cascading functions)
+					$last_start = $array['start'];
+					$last_key = $key;
 				}
 			}
 			
-        	$GLOBALS['transactions'][$input['transaction']][$last_start]['duration'] = microtime() - $last_start;
+        	$GLOBALS['transactions'][$input['transaction']][$last_key]['duration'] = microtime() - $last_start;
 
-        	//If data state changed get changes from state_id corresponding changes of field as compared with previous state_id
-        	if($input['statechanges']){
-        		$GLOBALS['transactions'][$input['transaction']][$last_start]['statechanges'] = $input['statechanges']; //taking in array('state_id', 'changed');
+        	//If data state(s) changed as compared with previous state (updateNode() measures difference)
+        	if($input['statechanged']){
+				/*
+					if node: array('node.id' => {$node_id},  'changed');
+					if table: array('{$table_name}.id => {$entry_id}'  'changed');
+				*/
+        		$GLOBALS['transactions'][$input['transaction']][$last_key]['statechanged'] = $input['statechanged'];
         	}
 
         	//In case transaction failed...
-        	if(isset($input['status_code'] == '400')){
-        		$GLOBALS['transactions'][$input['transaction']][$last_start]['status_code'] = '400';
+        	if(is_array($input['errors'])){
+        		$GLOBALS['transactions'][$input['transaction']][$last_key]['status_code'] = $input['errors'];
         	}
 
         	$transaction = $input['transaction'];
+
         }
 
     	return $transaction;
   	}
 
-  	//With blockchain, transactions and corresponding data state changes are gathered in blocks, linking back to blocks holding data state roots
-  	//This is a relational database, where state changes are gathered in content_state table, while transactions are logged in blocks
+  	//With blockchain, transactions and corresponding data state changes are gathered in blocks, rooted back to previous data states
+  	//This is a relational database, where state changes are gathered in content_state table, and transactions logged in block table
 		//To-do: merkletree implementation for data validation - script is in merkletree.php
-  		//Idea for implementation: automatic post to Facebook page with block_id and hash at random time as an independent partial blockchain storage
-    function newBlock(){
+  		//Idea for implementation: automatic post to a Facebook page with block_id and hash at random time as an independent partial blockchain storage
+    function toBlockchain(){
     	$db = $GLOBALS['db'];
-    	$user_id = $GLOBALS['user_id'];
-    	$entity_id = $GLOBALS['entity_id'];
+    	$block['user_id'] = $GLOBALS['user']['id'];
+    	$block['entity_id'] = $GLOBALS['entity']['id'];
 
-    	if(isset($GLOBALS['transactions'])){
+    	if(isset($GLOBALS['transactions']) && $buffer['transactions'] = $GLOBALS['transactions']){
 
 		    //Block table in Ethereum
 		    /* 
@@ -62,43 +85,67 @@
 				* in blockchain...
 					transactions can be validated by each peer, by repeating functions on top of stateroot
 		    */
-			//Block table in this simulation
+			//Block table in this emulation
 			/*	
-				- user_id - user who accessed the database
+				- created_by_user_id - user who accessed the database
+				- created_by_entity_id - user acting on behalf of an entity_id
 				- entity_id - user acting on behalf of an entity_id
 				- time - block creation time
-				- transactions - high-level functions with inputs and corresponding data state changes
-				- transaction_duration - how much time processing took (microseconds)
-				- hash - !!! to-do - merkletree hash of "transactions" & previous block's hash
+				- transactions - functions with inputs
+				- transactions_duration - how much time processing took (microseconds)
+				- statechanged - changes made to data
+				  (
+					difference in getNode before and after updateNode goes into an array
+		
+					if node: array('node.id' => {$node_id}, $statechanged);
+						hash of difference (compared node before updating / after updating)
 
-				* well, it's not exactly blockchain... it doesn't provide data validity check on programmatic level (yet)
-					- while transactions table can provide details into every change made (outside of block table), merkletree sequence of hashes isn't mirrored in a distributed database
-					- thus, consensus for block validity isn't distributed among peers
-					- furthermore, transactions can't be validated by repeating functions on top of stateroot
+					if table: array('{$table_name}.id => {$entry_id}', $statechanged);
+						difference
+				  )
+				- hash - !!! to-do - merkletree hash of an array consisting of all elements listed here * previous block with statechanged hash
+
+				* well, it's not exactly blockchain... it doesn't provide data validity check on programmatic level (though it could)
+					- while transactions table can provide details into every change made (outside of block table), merkletree sequence of hashes isn't mirrored in a distributed database - thus, consensus for block validity isn't distributed among peers
+					- furthermore, state changes aren't validated by each node, repeating functions on top of original data state
 			*/
+			
+        	$GLOBALS['transactions'][$input['transaction']][$last_key]['duration'] = microtime() - $last_start;
+        	$GLOBALS['transactions'][$input['transaction']][$last_key]['statechanged'] = $input['statechanged'];
 
-	    	$transactions = $GLOBALS['transactions'];
+			foreach($buffer['transactions'] AS $transaction => $array){
+				$start = 			(($array['start'] < $start && $start) || !$start) ? $array['start'] : $start;
+				$total_duration = 	$total_duration + $array['duration'];
 
-			foreach($GLOBALS['transactions'] AS $transaction => $array){
-				$transaction_start = array_key($array);
-				$start = 	(($transaction_start < $start && $start) || !$start) ? $transaction_start : $start;
-				$end = 		(($array['end'] > $end && $end) || !$end) ? $array['end'] : $end;
-
-				foreach($array['statechanges'] AS $state_id => $changed){
-					$statechanges[array_key($array).'-'.$array['end']][$state_id] = $changed;
+				foreach($array['statechanged'] AS $key => $changed){
+					$block['statechanged'][$transaction][$transaction_start] = $changed;
+				}
+				
+				$t_buffer = json_decode($transaction);
+				if(!$GLOBALS['allTransactionsLogged']){
+					if(isset($array['statechanged'])){
+						$block['transactions'][$transaction] = $array;
+					} else {
+						$t_buffer = json_decode($transaction);
+						$block['transactions']['sum'][$t_buffer['function']]['duration'] = $block['transactions'][$t_buffer['function']]['duration'] + $array['duration'];
+						$block['transactions']['sum'][$t_buffer['function']]['num_of_calls'] = $block['transactions']['sum'][$t_buffer['function']]['num_of_calls'] + 1;
+					}
+				} else {
+					$block['transactions']['specific'][$transaction] = $array;
 				}
 			}
-	    	$transaction_duration = $end - $start;
+	    	$block['transactions_duration'] = $total_duration;
 
-	   		$transactions = json_encode($transactions);
-			$hash = md5($transactions); //!!! merkletree
+	   		$block['transactions'] = json_encode($block['transactions']);
+			$hash = md5(json_encode($block)); //!!! merkletree
 
-			$sql.= "INSERT INTO block (user_id, entity_id, time_created, transaction_duration, transactions, hash) VALUES ".
-	      							"'{$user_id}', ".
-	      							"'{$entity_id}', ".
+			$sql.= "INSERT INTO block (user_id, entity_id, time_created, transactions, transactions_duration, statechanged, hash) VALUES ".
+	      							"'{$block['user_id']}', ".
+	      							"'{$block['entity_id']}', ".
 	      							time().', '.
-	      							"'{$transaction_duration}', ".
-	      							"'{$transactions}', ".
+	      							"'{$block['transactions_duration']}', ".
+	      							"'{$block['transactions']}', ".
+	      							"'{$block['statechanged']}', ".
 	      							"'{$hash}';";
 			if(mysqli_query($db, $sql_content)){
 	      		unset();

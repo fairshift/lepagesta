@@ -51,7 +51,7 @@
       }
     }
 
-  include("vendor/Google/translate/TranslateClient.php");
+  include("vendor/Google/Translate/TranslateClient.php");
     function translate($input, $from, $to){
       $google = new TranslateClient(); // Default is from 'auto' to 'en'
       $google->setSource($from); // Translate from English

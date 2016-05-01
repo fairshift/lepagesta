@@ -5,11 +5,11 @@ function safeProfileData($row){
       unset($row['password']);
 
       if($row['twitter_user_id']){
-      	$row['twitter_user_id'] = 1;
+      	$row['twitter_user_id'] = true;
       }
 
       if($row['facebook_user_id']){
-      	$row['facebook_user_id'] = 1;
+      	$row['facebook_user_id'] = true;
       }
 
       return $row;
