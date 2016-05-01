@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 28, 2016 at 03:13 AM
+-- Generation Time: May 01, 2016 at 11:52 PM
 -- Server version: 5.6.24
 -- PHP Version: 5.6.8
 
@@ -23,16 +23,16 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `block`
+-- Table structure for table `blockchain`
 --
 
-CREATE TABLE IF NOT EXISTS `block` (
+CREATE TABLE IF NOT EXISTS `blockchain` (
   `id` int(11) unsigned NOT NULL,
   `created_by_user_id` int(11) unsigned NOT NULL,
   `created_by_entity_id` int(11) unsigned NOT NULL,
   `time_created` int(11) unsigned NOT NULL,
-  `transaction_duration` float unsigned NOT NULL,
   `transactions` text NOT NULL,
+  `transactions_duration` float unsigned NOT NULL,
   `statechanged` text NOT NULL,
   `hash` varchar(64) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -46,9 +46,13 @@ CREATE TABLE IF NOT EXISTS `block` (
 CREATE TABLE IF NOT EXISTS `cache` (
   `id` int(11) unsigned NOT NULL,
   `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `time_called` int(11) unsigned NOT NULL,
+  `usage_count` int(11) unsigned NOT NULL,
   `transaction` text CHARACTER SET utf8 NOT NULL,
   `relations` varchar(256) CHARACTER SET utf8 NOT NULL,
-  `state` text CHARACTER SET utf8 NOT NULL,
+  `response` text CHARACTER SET utf8 NOT NULL,
+  `nodes` text CHARACTER SET utf8 NOT NULL,
   `time_unsynchronized` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
@@ -74,7 +78,7 @@ CREATE TABLE IF NOT EXISTS `circle` (
   `privilege_join` tinyint(1) unsigned DEFAULT NULL,
   `privilege_invite` tinyint(1) unsigned DEFAULT NULL,
   `privilege_encircle` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_branch` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_line` tinyint(1) unsigned DEFAULT NULL,
   `privilege_edit` tinyint(1) unsigned NOT NULL,
   `privilege_represent` tinyint(1) unsigned NOT NULL,
   `privilege_manage` tinyint(1) unsigned NOT NULL,
@@ -90,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `circle` (
 -- Dumping data for table `circle`
 --
 
-INSERT INTO `circle` (`id`, `created_by_user_id`, `created_by_entity_id`, `time_created`, `time_updated`, `title`, `description`, `type_id`, `url`, `privilege_read`, `privilege_reflect`, `privilege_value`, `privilege_join`, `privilege_invite`, `privilege_encircle`, `privilege_branch`, `privilege_edit`, `privilege_represent`, `privilege_manage`, `value_system`, `circle_commoner_count`, `circle_content_count`, `removed_by_user_id`, `removed_by_entity_id`, `time_removed`) VALUES
+INSERT INTO `circle` (`id`, `created_by_user_id`, `created_by_entity_id`, `time_created`, `time_updated`, `title`, `description`, `type_id`, `url`, `privilege_read`, `privilege_reflect`, `privilege_value`, `privilege_join`, `privilege_invite`, `privilege_encircle`, `privilege_line`, `privilege_edit`, `privilege_represent`, `privilege_manage`, `value_system`, `circle_commoner_count`, `circle_content_count`, `removed_by_user_id`, `removed_by_entity_id`, `time_removed`) VALUES
 (2, 75, 0, 0, 0, '', 'This is a local circle.', 0, '', 1, 0, 0, 0, 0, NULL, NULL, 0, 0, 0, 'percent', 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
@@ -114,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `circle_commoner` (
   `privilege_join` tinyint(1) unsigned DEFAULT NULL,
   `privilege_invite` int(11) unsigned NOT NULL,
   `privilege_encircle` tinyint(1) unsigned DEFAULT NULL,
-  `privilege_branch` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_line` tinyint(1) unsigned DEFAULT NULL,
   `privilege_edit` tinyint(1) unsigned NOT NULL,
   `privilege_represent` tinyint(1) unsigned NOT NULL,
   `privilege_manage` tinyint(1) unsigned DEFAULT NULL,
@@ -123,26 +127,6 @@ CREATE TABLE IF NOT EXISTS `circle_commoner` (
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `circle_nested`
---
-
-CREATE TABLE IF NOT EXISTS `circle_nested` (
-  `id` int(11) NOT NULL,
-  `created_by_user_id` int(11) unsigned NOT NULL,
-  `created_by_entity_id` int(11) unsigned NOT NULL,
-  `time_created` int(11) unsigned NOT NULL,
-  `time_updated` int(11) unsigned NOT NULL,
-  `circle_id` int(11) unsigned NOT NULL,
-  `nested_circle_id` int(11) unsigned NOT NULL,
-  `inherit_privileges` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `removed_by_user_id` int(11) unsigned NOT NULL,
-  `removed_by_entity_id` int(11) unsigned NOT NULL,
-  `time_removed` int(11) unsigned NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -178,9 +162,9 @@ CREATE TABLE IF NOT EXISTS `circle_type` (
 --
 
 INSERT INTO `circle_type` (`id`, `created_by_user_id`, `created_by_entity_id`, `time_created`, `time_updated`, `title`, `description`, `removed_by_user_id`, `removed_by_entity_id`, `time_removed`) VALUES
-(1, 75, 0, 1459754507, 1459754507, 'Project', '', 0, 0, 0),
+(1, 75, 0, 1461328313, 1461328313, 'Personal', '', 0, 0, 0),
 (2, 75, 0, 1460331788, 1460331788, 'Activity', '', 0, 0, 0),
-(4, 75, 0, 1461328313, 1461328313, 'Personal', '', 0, 0, 0),
+(3, 75, 0, 1459754507, 1459754507, 'Project', '', 0, 0, 0),
 (5, 75, 0, 1461328350, 1461328350, 'Organization', '', 0, 0, 0);
 
 -- --------------------------------------------------------
@@ -213,12 +197,20 @@ CREATE TABLE IF NOT EXISTS `gesture` (
   `created_by_entity_id` int(11) unsigned NOT NULL,
   `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
+  `title` varchar(140) CHARACTER SET utf8 NOT NULL,
   `receiving_user_id` int(11) unsigned NOT NULL,
   `receiving_entity_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `gesture`
+--
+
+INSERT INTO `gesture` (`id`, `created_by_user_id`, `created_by_entity_id`, `time_created`, `time_updated`, `title`, `receiving_user_id`, `receiving_entity_id`, `removed_by_user_id`, `removed_by_entity_id`, `time_removed`) VALUES
+(0, 0, 0, 1462062385, 0, 'Klima poka', 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -399,8 +391,11 @@ CREATE TABLE IF NOT EXISTS `need` (
 
 CREATE TABLE IF NOT EXISTS `node` (
   `id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
   `table_name` varchar(48) NOT NULL,
-  `entry_id` int(11) unsigned NOT NULL
+  `entry_id` int(11) unsigned NOT NULL,
+  `main_line_id` int(11) unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -435,13 +430,20 @@ CREATE TABLE IF NOT EXISTS `node_line` (
   `created_by_entity_id` int(11) unsigned NOT NULL,
   `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
-  `title` varchar(32) NOT NULL,
+  `node_id` int(11) unsigned NOT NULL,
   `root_node_id` int(11) unsigned NOT NULL,
   `root_line_id` int(11) unsigned NOT NULL,
-  `root_state_id` int(11) unsigned NOT NULL,
+  `root_time_state_pointer` int(11) unsigned NOT NULL,
   `tie_node_id` int(11) unsigned NOT NULL,
   `tie_line_id` int(11) unsigned NOT NULL,
-  `tie_state_id` int(11) unsigned NOT NULL,
+  `tie_time_state_pointer` int(11) unsigned NOT NULL,
+  `privilege_read` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_reflect` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_value` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_encircle` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_line` tinyint(1) unsigned DEFAULT NULL,
+  `privilege_edit` tinyint(1) unsigned DEFAULT NULL,
+  `value_system` int(11) unsigned NOT NULL,
   `view_count` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
@@ -461,9 +463,10 @@ CREATE TABLE IF NOT EXISTS `node_media` (
   `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `state_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
+  `time_state_pointer` int(11) unsigned NOT NULL,
   `media_id` int(11) unsigned NOT NULL,
+  `cover` tinyint(1) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
@@ -482,8 +485,8 @@ CREATE TABLE IF NOT EXISTS `node_portal` (
   `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `state_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
+  `time_state_pointer` int(11) unsigned NOT NULL,
   `portal_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
@@ -503,7 +506,7 @@ CREATE TABLE IF NOT EXISTS `node_privilege` (
   `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
   `privilege_read` tinyint(3) unsigned NOT NULL,
   `privilege_reflect` tinyint(3) unsigned NOT NULL,
   `privilege_value` tinyint(3) unsigned NOT NULL,
@@ -529,8 +532,8 @@ CREATE TABLE IF NOT EXISTS `node_reflection` (
   `time_created` int(11) unsigned NOT NULL,
   `time_updated` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `state_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
+  `time_state_pointer` int(11) unsigned NOT NULL,
   `reflection_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
@@ -549,15 +552,46 @@ CREATE TABLE IF NOT EXISTS `node_state` (
   `created_by_entity_id` int(11) unsigned NOT NULL,
   `time_created` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
   `language_id` int(11) unsigned NOT NULL,
   `googletranslated` tinyint(1) unsigned NOT NULL,
-  `frame` varchar(24) CHARACTER SET utf8 NOT NULL,
+  `field` varchar(64) CHARACTER SET utf8 NOT NULL,
   `content` text CHARACTER SET utf8 NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `node_state`
+--
+
+INSERT INTO `node_state` (`id`, `created_by_user_id`, `created_by_entity_id`, `time_created`, `node_id`, `line_id`, `language_id`, `googletranslated`, `field`, `content`, `removed_by_user_id`, `removed_by_entity_id`, `time_removed`) VALUES
+(1, 0, 0, 0, 0, 0, 0, 0, 'title', 'Piknik pri Tatu', 0, 0, 0),
+(2, 0, 0, 0, 0, 0, 0, 0, 'title', 'Piknik za Tatov rojstni dan', 0, 0, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `node_translate`
+--
+
+CREATE TABLE IF NOT EXISTS `node_translate` (
+  `id` int(11) unsigned NOT NULL,
+  `created_by_user_id` int(11) unsigned NOT NULL,
+  `created_by_entity_id` int(11) unsigned NOT NULL,
+  `time_created` int(11) unsigned NOT NULL,
+  `time_updated` int(11) unsigned NOT NULL,
+  `node_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
+  `time_state_pointer` int(11) unsigned NOT NULL,
+  `from_language_id` int(11) NOT NULL,
+  `to_language_id` int(11) NOT NULL,
+  `time_translated` int(11) NOT NULL,
+  `removed_by_user_id` int(11) unsigned NOT NULL,
+  `removed_by_entity_id` int(11) unsigned NOT NULL,
+  `time_removed` int(11) unsigned NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -571,12 +605,11 @@ CREATE TABLE IF NOT EXISTS `node_value` (
   `created_by_entity_id` int(11) unsigned NOT NULL,
   `time_created` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `state_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
+  `time_state_pointer` int(11) unsigned NOT NULL,
   `value_id` int(11) unsigned NOT NULL,
   `value` int(3) NOT NULL,
   `value_system_id` int(11) unsigned NOT NULL,
-  `_keypart_public` varchar(64) CHARACTER SET utf8 NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
@@ -594,8 +627,8 @@ CREATE TABLE IF NOT EXISTS `node_view` (
   `entity_id` int(11) unsigned NOT NULL,
   `time` int(11) unsigned NOT NULL,
   `node_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
-  `state_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
+  `time_state_pointer` int(11) unsigned NOT NULL,
   `attention_span` float unsigned NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -874,8 +907,8 @@ CREATE TABLE IF NOT EXISTS `site_namespace` (
   `namespace` varchar(64) NOT NULL,
   `user_id` int(11) unsigned NOT NULL,
   `circle_id` int(11) unsigned NOT NULL,
-  `content_id` int(11) unsigned NOT NULL,
-  `branch_id` int(11) unsigned NOT NULL,
+  `node_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
@@ -1008,7 +1041,7 @@ CREATE TABLE IF NOT EXISTS `user_message` (
   `recipient_user_id` int(11) unsigned NOT NULL,
   `recipient_entity_id` int(11) unsigned NOT NULL,
   `message` text CHARACTER SET utf8 NOT NULL,
-  `state_id` int(11) unsigned NOT NULL,
+  `line_id` int(11) unsigned NOT NULL,
   `removed_by_user_id` int(11) unsigned NOT NULL,
   `removed_by_entity_id` int(11) unsigned NOT NULL,
   `time_removed` int(11) unsigned NOT NULL
@@ -1393,9 +1426,9 @@ CREATE TABLE IF NOT EXISTS `_wormhole` (
 --
 
 --
--- Indexes for table `block`
+-- Indexes for table `blockchain`
 --
-ALTER TABLE `block`
+ALTER TABLE `blockchain`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -1408,12 +1441,6 @@ ALTER TABLE `circle`
 -- Indexes for table `circle_commoner`
 --
 ALTER TABLE `circle_commoner`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indexes for table `circle_nested`
---
-ALTER TABLE `circle_nested`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -1504,6 +1531,12 @@ ALTER TABLE `node_reflection`
 -- Indexes for table `node_state`
 --
 ALTER TABLE `node_state`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `node_translate`
+--
+ALTER TABLE `node_translate`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -1703,9 +1736,9 @@ ALTER TABLE `_wormhole`
 --
 
 --
--- AUTO_INCREMENT for table `block`
+-- AUTO_INCREMENT for table `blockchain`
 --
-ALTER TABLE `block`
+ALTER TABLE `blockchain`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `circle`
@@ -1717,11 +1750,6 @@ ALTER TABLE `circle`
 --
 ALTER TABLE `circle_commoner`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
---
--- AUTO_INCREMENT for table `circle_nested`
---
-ALTER TABLE `circle_nested`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `circle_report`
 --
@@ -1796,6 +1824,11 @@ ALTER TABLE `node_reflection`
 -- AUTO_INCREMENT for table `node_state`
 --
 ALTER TABLE `node_state`
+  MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=3;
+--
+-- AUTO_INCREMENT for table `node_translate`
+--
+ALTER TABLE `node_translate`
   MODIFY `id` int(11) unsigned NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `node_value`
