@@ -32,7 +32,8 @@
 
     if($route['auth']){
 
-      $user = getUser('route' => array('auth' => $route['auth']))['response'];
+      $user = getUser(array('route' => array('auth' => $route['auth'])))['response'];
+      $user = $GLOBALS['nodes']['user'][$user['id']];
 
       if(isset($user['id'])){
 
@@ -47,24 +48,28 @@
 
         mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
         mysqli_query($db, "UPDATE user SET time_visited = '".time()."' WHERE auth = '{$route['auth']}'");
+        $mysqli->commit();
 
       } else {
         $newUser = true;
       }
     }
 
-    if(!$route['auth'] || $newUser == true)){
+    if(!$route['auth'] || $newUser == true){
 
       $auth = md5("LOL%I=ISUP".microtime());
+
+      mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
       mysqli_query($db, 'INSERT INTO user (auth, auth_time, time_visited) VALUES ('.
                   "'{$route['auth']}', ".
-                  "'".time()."', "
+                  "'".time()."', ".
                   "'".time()."'" );
+      mysqli_commit($db);
 
-      $user = getUser('route' => array('auth' => $route['auth']))['response'];
+      $user = getUser(array('route' => array('auth' => $route['auth'])))['response'];
     }
 
-    transaction(array('transaction' => $transaction, 'statechanges' => $statechanges));
+    transaction(array('transaction' => $transaction, 'statechanged' => $statechanged));
 
     return $user;
   }
@@ -72,24 +77,24 @@
 //Sign in / Register / Confirm router
   function passThrough(){
 
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    $continue = emailStatus('route' => $route);
+    $continue = emailStatus(array('route' => $route));
 
     if($continue == 'register'){
-      $register = registerPerson('route' => $route);
+      $register = registerPerson(array('route' => $route));
     }
     if($continue == 'signin'){
-      $user = signinPerson('route' => $route);
+      $user = signinPerson(array('route' => $route));
     }
 
     if($user['id'] > 0){
       $response['user'] = $user;
       $response['status'] = 'welcome';
     } else {
-      $response['status'] = emailStatus($db, $user_id);
+      $response['status'] = emailStatus(array('route' => $route));
     }
 
     transaction(array('transaction' => $transaction));
@@ -101,18 +106,18 @@
 
     $user_id = $GLOBALS['user']['id'];
 
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
 
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
     if($user_id > 0 && filter_var(urldecode($_REQUEST['email']), FILTER_VALIDATE_EMAIL) == urldecode($_REQUEST['email'])){
 
-      $row = getUser('route' => array('email' => $route['email']))['response'];
+      $user = getUser(array('route' => array('email' => $route['email'])))['response'];
 
-      if($row['id'] && strlen($row['password']) == 32 && $row['time_email_confirmed'] > 0){
+      if($user['id'] && strlen($user['password']) == 32 && $user['time_email_confirmed'] > 0){
          $response = "signin";
-      } elseif($row['id'] && strlen($row['password']) == 32 && $row['time_email_confirmed'] == 0){
+      } elseif($user['id'] && strlen($user['password']) == 32 && $user['time_email_confirmed'] == 0){
         $response = "confirm";
       } else {
         $response = "register";
@@ -129,15 +134,15 @@
   function usernameExists(){
 
     $user_id = $GLOBALS['user']['id'];
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
     if($user_id && $route['username']){
 
-      $row = getUser('route' => array('username' => $route['username'])['response'];
+      $user = getUser(array('route' => array('where' => array('username' => $route['username']))))['response'];
 
-      if($row['id'] > 0){
+      if($user['response']['id'] > 0){
         $response['status'] = "exists";
       } else {
         $response['status'] = "available";
@@ -152,13 +157,14 @@
   function registerPerson(){
 
     $user_id = $GLOBALS['user']['id'];
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
+
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    if(!getUser('route' => array('route' => ('email' => $route['email']), 'dataset' => 'user')['response']['id'] 
+    if(!getUser(array('route' => array('email' => $route['email']), 'dataset' => 'user'))['response']['id'] 
       && $route['password'] == $route['password_confirm'] 
-      && !getUser('route' => array('route' => ('username', 'id' => $route['username']), 'dataset' => 'user')['response']['id'] 
+      && !getUser(array('route' => array('username' => $route['username']), 'dataset' => 'user'))['response']['id'] 
     ){
 
       $email_confirmation_code = md5("LOL%I=ISUP".microtime());
@@ -175,7 +181,7 @@
 
       mailer($route['email'], array('email_confirmation_code' => $email_confirmation_code, 'username' => $route['username']), 'confirmation');
 
-      $user = getUser('route' => array('selector' => 'auth', 'id' => $auth))['response'];
+      $user = getUser(array('route' => array('auth' => $auth)))['response'];
     }
 
     transaction(array('transaction' => $transaction));
@@ -186,13 +192,13 @@
   function confirmEmail(){
 
     $user_id = $GLOBALS['user']['id'];
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    if($user_id && $route['code'] && getUser('route' => array('selector' => 'email_confirmation_code', 'id' => $route['code']), 'dataset' => 'user')['response']['id']){
+    if($user_id && $route['code'] && getUser(array('route' => array('email_confirmation_code' => $route['code']), 'dataset' => 'user'))['response']['id']){
 
-      $sql = "UPDATE user SET time_email_confirmed = '".time()."' $sql_site WHERE id = {$user['id']}";
+      $sql = "UPDATE user SET time_email_confirmed = '".time()."' WHERE id = {$user['id']}";
       mysqli_query($db, $sql);
 
       $time = time();
@@ -210,14 +216,15 @@
   function resendConfirmation(){
 
     $user_id = $GLOBALS['user']['id'];
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    $user = getUser('route' => array('email' => $route['email']), 'dataset' => array('auth'))['response'];
+    $user = getUser(array('route' => array('email' => $route['email']), 'dataset' => array('auth')))['response'];
+    $user = $GLOBALS['user'][$user['id']];
 
     if($user['email_confirmation_code'] > 0 && $user['time_email_confirmed'] == 0){
-      mailer($route['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'username' => $user['username']), 'confirmation');
+      mailer($user['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'username' => $user['username']), 'confirmation');
       $response = true;
     }
 
@@ -229,11 +236,12 @@
   function signinPerson(){
 
     $user_id = $GLOBALS['user']['id'];
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    $user = getUser('route' => array('email' => $route['email']), 'dataset' => array('auth'))['response'];
+    $user = getUser(array('route' => array('email' => $route['email']), 'dataset' => array('auth')))['response'];
+    $user = $GLOBALS['user'][$user['id']];
 
     if($user_id && md5($route['password']) == $user['password']){
 
@@ -259,7 +267,7 @@
   /*function mergeAccounts(){ //$merging_user_id, $user_id
 
     $user_id = $GLOBALS['user']['id'];
-    $input = func_get_args();
+    $input = func_get_args()[0];
     $route = $input['route'];
     transaction(__FUNCTION__, $route);
 

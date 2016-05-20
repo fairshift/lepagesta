@@ -1,5 +1,5 @@
 <?php
-//Cache works more efficiently when table has less entries and is therefore cleared after a set amount of time, while querys stay in chain forever unmodified
+//Cache works more efficiently when table has less entries and is therefore cleared after a set amount of time, while querys stay in chain forever unmodified (have I writen querys?)
 	//An examplary difference of how number of entries among querychain and cache might differ (in a small database)
 		//Blockchain length ------------------------------------------------------
 		//Cache length	 	----
@@ -9,7 +9,7 @@
 
     	$db = $GLOBALS['db'];
 
-    	$sql = "SELECT relations, response, nodes FROM cache WHERE transaction = '{$transaction}' AND (unsynchronized_time > ".time()." OR unsynchronized_time = 0)";
+    	$sql = "SELECT relations, response, nodes FROM cache WHERE transaction = '{$transaction}' AND time_unsynchronized = 0";
 	    $result = mysqli_query($db, $sql);
 	    if($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 	    	$query['cache-relations'] = json_decode($row['relations']);
@@ -30,7 +30,7 @@
     	$db = $GLOBALS['db'];
     	$user_id = $GLOBALS['user_id'];
 
-    	if(isset($query['cache-relations']) && isset($query['response']) && isset($query['nodes'])){
+    	if( isset($query['cache-relations']) && isset($query['response']) && isset($query['transaction'])){
 
     		$transaction = $query['transaction'];
 	    	$relations = json_encode($query['cache-relations']);
@@ -76,7 +76,10 @@
 			}
 		}
 
-  		$GLOBALS['nodes'] = array_merge($GLOBALS['nodes'], $GLOBALS['cache-nodes'][$transaction]);
+		if($query['cover-transaction'] == $transaction){
+  			$GLOBALS['nodes'] = array_merge($GLOBALS['nodes'], $GLOBALS['cache-nodes'][$transaction]);
+  			unset($GLOBALS['cache-nodes'][$transaction]);
+  		}
 
 	    return true;
     }
@@ -122,7 +125,7 @@
 
 	function mergeCache($merging, $merged){
 
-		$merging['cache-relations'] = array_merge($merging['cache-relations'], $merged['cache-relations']);
+		$merging['relations'] = array_merge($merging['relations'], $merged['relations']);
 
 		return $merging;
 	}

@@ -5,6 +5,7 @@
 
   header('Access-Control-Allow-Origin: *'); //Cross-origin enabler, a bridge of data to a multiverse of online services, onwards into the world of the living
   //error_reporting(0); @ini_set('display_errors', 0);
+  error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
 
 /*
   With blockchain, any changes to data states are stored in the distributed database
@@ -15,7 +16,7 @@
 
   Doing so we keep in mind necessities of the blockchain paradigm shift, enabling a smoother passage onwards (trust in central authority's proper management is needed until processed data is signed by users as well as functions/objects dealing with it - without the possibility of tampering with internal states)
 
-  Networks of brains and computer nodes are more aware when interacting to collaboratively shape a more complete, data driven picture
+  Networks of brain and computer nodes are more aware when interacting to collaboratively shape a more complete, data driven picture
   A majority consensus on validity of data is needed for this to kick in, enabled by...
 
     * a process of collecting, storing and processing data that enjoys trust at both both ends, social and technological
@@ -27,42 +28,50 @@
 */
 
   session_start();
+  include('local/config.php');
   include('includer.php'); //script, which allows for customizations to API (in customized/$domain/ folder)
-  dbWrapper(); //$GLOBALS['db'] stores database object
 
-//Load database functions
-  includer('database/dbwrapper.php'); //database session
-  includer('database/safety.php'); //functions to keep interactions with API/DB safe
-
-//Site specific data pool functions - validate domain / site_id, passed from frontend
-  includer("site/site.php");
-  $GLOBALS['site'] = getSite('route' => array('domain' => input('o', 'string', 1, 64), //passed when user first loads a site
-                                              'site_id' => input('s', 'integer', 1, 11)))['state']; //passed on all next loads site_id
-
-//Now when site domain is established, include the rest of functionalities (customized/$domain/ folder is now ready for use)
-  includer('include.php');
+  dbWrapper($account); //$GLOBALS['db'] stores database object
+  unset($account);
 
 /*
-  Ethereum(.org) charges computing power to the user (in amount of Ether as currency), providing incentive for script efficiency
+  Ethereum(.org) decentralized platform charges computing power to the user (in amount of Ether as currency), providing incentive for script efficiency. Here, ...
 
     * Interactions with this API are logged, tracking changes to data states, enabling data validation, access control and measuring script efficiency
     * Such pattern can be imagined to facilitate validation of encrypted data (requires use of private-public key pairs by users) - eg.: http://enigma.media.mit.edu/
 */
   $transaction = transaction(array('function' => 'main.php', 'route' => $_REQUEST));
 
+  //Load languages
+  ///listLanguages(); //list all languages in $GLOBALS['languages'] (field ['googletranslate'] can be 0 or 1)
+  //$GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query
+  $GLOBALS['default_language_id'] = 20; //default language is English
+
+  $GLOBALS['node_languages'][] = $GLOBALS['default_language_id'];
+  //$GLOBALS['node_languages'] = arrayAddDistinct($, $GLOBALS['node_languages']); //user's spoken languages
+
+//Site-specific functions - validate domain / site_id, passed from frontend
+  getSite(array('route' => array( 'domain' => input('o', 'string', 1, 64), //passed when user first loads a site
+                                  'site_id' => input('s', 'integer', 1, 11)) )); //passed on all next loads site_id
+
+//Now when site domain is established, include the rest of functionalities (customized/$domain/ folder is now ready for use)
+  includer('include');
+
 /* 
   with Ethereum's blockchain, user accounts are hashes that already exist
 */
 //User authentication & basic necessary data
-  $GLOBALS['user'] = authenticate('route' => array('auth' => input( 'auth', 'md5', 32, 32 )))['state'];
+  $GLOBALS['user'] = authenticate(array('route' => array('auth' => input( 'auth', 'md5', 32, 32 ))))['state'];
 
-//Is user acting on behalf of an entity? ˇ requires permission_represent, permission_manage
-  $GLOBALS['entity'] = getEntity('entity_id' => input('entity_id', 'integer', 1, 11)); 
+//Is user acting on behalf of an entity? ˇ requires permission_represent, permission_manage within a circle
+  $GLOBALS['entity'] = getEntity(array('entity_id' => input('entity_id', 'integer', 1, 11)));
 
-//Language
-  $GLOBALS['languages'] = listLanguages($GLOBALS['user']['id']); //list all languages ('googletranslate' supported for a language? 0 or 1)
-  $GLOBALS['default_language_id'] = $GLOBALS['languages']['en']['id']; //default language is English
-  $GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query
+/* 
+  $GLOBALS['nodes'] is a cache for data for this call (so that a single data node is only queried from DB once per call)
+  TODO - $GLOBALS['sent-nodes'] is a cache for data for current session, so that a single data node is only sent out once per session (file cache with auth as key, changing per each session)
+*/
+  //loadSentNodes($_REQUEST['auth']); //TODO
+
 
 //Call to API 
   if(strpos($_REQUEST['call'], '/') > 0){
@@ -80,14 +89,13 @@
   $response['user'] = safeProfileData($GLOBALS['user']); //$response['user']['status']; equals 'welcome' when user is confirmed (email, Facebook, Twitter)
 
 //JSON response
-  $response['nodes'] = $GLOBALS['nodes']; //reusable array to reduce data replication overhead
+  $response['nodes'] = $GLOBALS['nodes']; //TO-DO $GLOBALS['sent-nodes'] session cache completed with $GLOBALS['nodes'] cache
   if(isset($response)){
     echo json_encode($response);
   }
 
 //Maintenance functions after connection to the frontend has been closed
   header( "Connection: Close" );
-  transaction(array('transaction' => $transaction));
 
 //Update modified tables with default language translation
 /* if(isset($GLOBALS['translation_queue'])){
@@ -100,5 +108,6 @@
   //cron($db);
 
 //Save transactions
+  transaction(array('transaction' => $transaction)); //close 'main.php'
   toBlockchain();
 ?>

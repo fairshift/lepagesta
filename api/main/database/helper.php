@@ -28,4 +28,62 @@
 	    }
 	    return false;
 	}
+
+	function arrayAddDistinct( $rows, $stack = array() ){
+
+		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+	  	foreach($rows AS $row){
+
+		    if(!in_array($row, $stack)){
+
+		      $stack[] = $row;
+		    }
+	  	}
+
+		transaction(array('transaction' => $transaction));
+	  	return $stack;
+	}
+
+	function arrayAddRecursive( $rows, $stack = array() ){
+
+		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+	  	foreach($rows AS $row){
+		    foreach($row AS $key => $value){
+
+		      if($stack[$key]){
+		        if(!in_array($value, $stack[$key]) && $stack[$key] != $value){
+		          $stack = array_merge_recursive($stack, $relation);
+		        }
+		      } else {
+		        $stack[$table] = $id;
+		      }
+		    }
+	 	}
+	 	
+	  	return $stack;
+	}
+
+	function arrayMergeDistinct( array &$array1, array &$array2 ){ //array_merge_recursive_distinct
+
+		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+		$merged = $array1;
+
+		foreach ( $array2 as $key => &$value )
+		{
+		    if ( is_array ( $value ) && isset ( $merged [$key] ) && is_array ( $merged [$key] ) )
+		    {
+		      $merged [$key] = arrayMergeDistinct ( $merged [$key], $value );
+		    }
+		    else
+		    {
+		      $merged [$key] = $value;
+		    }
+		}
+
+		transaction(array('transaction' => $transaction));
+		return $merged;
+	}
 ?>

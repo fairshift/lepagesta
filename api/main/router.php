@@ -1,5 +1,5 @@
 <?php
-//Call to API is routed...
+//Call to API is following routes...
   switch($GLOBALS['o']){ //route call: object/function   <---   data intake
 
   //Stream of fresh data

@@ -1,35 +1,38 @@
 <?php
 
-	$GLOBALS['privileges'] = array('read', 'reflect', 'value', 'join', 'invite', 'encircle', 'line', 'edit', 'represent', 'manage');
+	$GLOBALS['actions'] = array('read', 'reflect', 'value', 'join', 'invite', 'encircle', 'line', 'edit', 'represent', 'manage', 'restore');
 
     function isAvailable(){ //returns if data state (table) is available, taking into account removals and read privilege set by author(s), circle(s) and possibly, encryption
 
     	//If this was a distributed blockchain database, data could be distributed among users running their nodes (in turn defining availability)
-    	//Idea: if data was encrypted, engagement within a circle could unlock public keys for content decryption (perhaps through enacted values?)
+    	//Idea: if data was encrypted, engagement within a circle could unlock public keys for content decryption (perhaps through matches of enacted values?)
 
  		$db = $GLOBALS['db'];
  		$user_id = $GLOBALS['user']['id'];
  		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
 
-        $input = func_get_args();
+        $input = func_get_args()[0];
 
-        $access = false;
+    	//Table, user_id / entity_id + contributors (cross-check)
+    	if($row = $input['table']){
+	      	if($row['time_removed'] == 0){ //entry isn't removed
+	      		$available = true;
+	      	} elseif($row['time_removed'] > 0){ //entry is removed
+	      		if(strpos($user_id, $input['row']['user_id']) || $input['row']['entity_id'] == $entity_id){ //content is removed and available to initiators, content circles
+		      		$available = true;
+		      	} else {
 
-    	//Data node !!! this part  by (d)encryptions of data by users / entities (private-public key pairs, partial public keys)
-    	if($row = $input['row']){
-	      	if($row['time_removed'] == 0){ //privileges for removed data are different (sufficient?)
-	      		$access = true;
-	      	} else {
-	      		if($input['row']['user_id'] == $user_id || $input['row']['entity_id'] == $entity_id){
-		      		$access = true;
+		      		$available = false;
 		      	}
 	      	}
     	}
-    	if(is_array($input['circles']) && $input['privileges']){
+
+    	//Node - lines in node might be accessible even if node's main_line_id and table are removed
+    	if(is_array($input['node'])){ //content is available 
     		availablePrivileges(array('circles' => $circles, 'privileges' => $input['privileges']));
     	}
 
-    	return $access;
+    	return $available;
 	}
 
 	//Privileges hierarchy: Content author > Commoner > Circle (NULL defaults to whichever the greater influence from Content's & Circle's privileges is)
@@ -39,16 +42,15 @@
  		$user_id = $GLOBALS['user']['id'];
  		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
 
-        $input = func_get_args();
+        $input = func_get_args()[0];
 
         //Function router
-    	$route = ksort($input['route']);
+    	$route = $input['route'];
 
-    	if($input['circles'])
-		foreach($GLOBALS['privileges'] AS $privilege){
+		foreach($GLOBALS['actions'] AS $action){
 
-			if($author && $privilege == 'read', 'join', ''){
-				$response['privilege_'.$privilege] = 
+			if($author && $action == 'read', 'join', ''){
+				$response['privilege_'.$action] = 
 			}
 			foreach($content_circles AS $content_circle){
 

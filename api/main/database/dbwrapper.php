@@ -1,9 +1,7 @@
 <?php
-	function dbWrapper(){
+	function dbWrapper($account){
 
-		include("local/config.php");
-
-		$db = mysqli_connect($account['host'], $account['database-user'], $account['database-password'], $account['database']) or die(mysqli_error());
+		$db = mysqli_connect($account['database-host'], $account['database-user'], $account['database-password'], $account['database']) or die(mysqli_error());
 	 	mysqli_set_charset( $db , "utf8" );
 
 	 	$GLOBALS['db'] = $db; //functions need this
@@ -16,7 +14,7 @@
 
  		$db = $GLOBALS['db'];
 
- 		$input = func_get_args();
+ 		$input = func_get_args()[0];
 		$input['name'] = preg_replace('/[^A-Za-z0-9\-]/', '', $input['name']); //removes special characters
 
         if($input['name']){

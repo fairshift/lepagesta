@@ -1,30 +1,35 @@
 <?php
 
 function getSite(){
-
+echo "Lol";
 	$db = $GLOBALS['db'];
 
+    $input = func_get_args()[0];
 	$route = $input['route'];
 
-    transaction(__FUNCTION__, $route);
+    $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
 	if($route['domain']){
 
-		$sql = "SELECT *, site.id AS site_id FROM site WHERE domain = '{$route['domain']}'";
-	    $result = mysqli_query($db, $sql);
-	    if($buffer['state'] = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+		$where['domain'] = $route['domain'];
+    	$query = getNode(array('route' => array('table' => 'site', 'where' => $where)));
 
-	    	if($buffer = getContent('route' => array('table_name' => 'site', 'entry_id' => $row['site_id']), 'block' => $buffer)){
-	    		$block = $buffer;
-	    	}
-
-	    	$response = $block;
-	    }
+        print_r($GLOBALS['nodes']);
 	}
-    
-    transaction(array('function' => __FUNCTION__));
 
-	return $response;
+    if($route['site_id']){
+
+        $query = getNode(array('route' => array('table' => 'site', 'id' => $route['site_id'])));
+    }
+    
+    if($query){
+        $GLOBALS['site']['id'] = $query['response']['id'];
+        $GLOBALS['site']['domain'] = $GLOBALS['nodes']['site'][$query['response']['id']]['domain'];
+    }
+
+    transaction(array('transaction' => $transaction));
+
+	return $query;
 }
 
 ?>

@@ -8,7 +8,7 @@
  		$user_id = $GLOBALS['user']['id'];
  		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
 
-        $input = func_get_args();
+        $input = func_get_args()[0];
 
         //Function router
     	$route = $input['route']; 	//node_id || (table_name & entry_id)
@@ -194,7 +194,7 @@
  		$user_id = $GLOBALS['user']['id'];
  		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
 
-        $input = func_get_args();
+        $input = func_get_args()[0];
 
         //Function router
     	$route = $input['route']; 	//state_id - to identify content that's being edited (necessary)
@@ -219,7 +219,7 @@
  		$user_id = $GLOBALS['user']['id'];
  		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_manage)
 
-        $input = func_get_args();
+        $input = func_get_args()[0];
 
         //Function router
     	$route = $input['route']; 	//state_id - to identify content that's being edited (necessary)
@@ -254,7 +254,7 @@
     function translateToDefault(){
 
       $db = $GLOBALS['db'];
-      $input = func_get_args();
+      $input = func_get_args()[0];
 
       if($input['language_id'] != $GLOBALS['default_language_id']){
 

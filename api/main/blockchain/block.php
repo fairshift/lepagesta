@@ -8,20 +8,24 @@
 
   	function transaction(){
 
-        $input = func_get_args();
+        $input = func_get_args()[0];
 
         //When function starts
         if($input['function']){
         	$keys['function'] = $input['function'];
-        	if(is_array($input['route'])){
+        	if($input['route']){
+        		$keys['route'] = $input['route'];
+        	}
+        	/*if(is_array($input['route'])){
         		$keys['route'] = ksort($input['route']);
+        		print_r($input['route']);
         		if(is_array($keys['route']['language_id'])){
         			$keys['route']['language_id'] = ksort($keys['route']['language_id']);
         		}
         	}
         	if(is_array($input['dataset'])){
         		$keys['dataset'] = ksort($input['dataset']);
-        	}
+        	}*/
     		$transaction = json_encode($keys);
     		$GLOBALS['transactions'][$transaction][]['start'] = microtime();
         }
@@ -114,42 +118,44 @@
         	$GLOBALS['transactions'][$input['transaction']][$last_key]['statechanged'] = $input['statechanged'];
 
 			foreach($buffer['transactions'] AS $transaction => $array){
-				$start = 			(($array['start'] < $start && $start) || !$start) ? $array['start'] : $start;
-				$total_duration = 	$total_duration + $array['duration'];
 
-				foreach($array['statechanged'] AS $key => $changed){
-					$block['statechanged'][$transaction][$transaction_start] = $changed;
-				}
-				
-				$t_buffer = json_decode($transaction);
-				if(!$GLOBALS['allTransactionsLogged']){
-					if(isset($array['statechanged'])){
-						$block['transactions'][$transaction] = $array;
-					} else {
-						$t_buffer = json_decode($transaction);
-						$block['transactions']['sum'][$t_buffer['function']]['duration'] = $block['transactions'][$t_buffer['function']]['duration'] + $array['duration'];
-						$block['transactions']['sum'][$t_buffer['function']]['num_of_calls'] = $block['transactions']['sum'][$t_buffer['function']]['num_of_calls'] + 1;
+				foreach($array AS $current){
+
+					foreach($current['statechanged'] AS $key => $changed){
+						$block['statechanged'][$transaction][$transaction_start] = $changed;
 					}
-				} else {
-					$block['transactions']['specific'][$transaction] = $array;
+
+					if(!$GLOBALS['allTransactionsLogged']){
+						if(isset($current['statechanged'])){
+							$block['transactions'][$transaction] = $array;
+						} else {
+							$t_buffer = json_decode($transaction);
+							$block['transactions']['sum'][$t_buffer->function]['duration'] = $block['transactions'][$t_buffer->function]['duration'] + $current['duration'];
+							$block['transactions']['sum'][$t_buffer->function]['num_of_calls'] = $block['transactions']['sum'][$t_buffer->function]['num_of_calls'] + 1;
+						}
+					} else {
+						$block['transactions'][$transaction] = $array;
+					}
 				}
 			}
 	    	$block['transactions_duration'] = $total_duration;
 
-	   		$block['transactions'] = json_encode($block['transactions']);
+	   		$block['transactions'] = addslashes(json_encode($block['transactions']));
 			$hash = md5(json_encode($block)); //!!! merkletree
 
-			$sql.= "INSERT INTO block (user_id, entity_id, time_created, transactions, transactions_duration, statechanged, hash) VALUES ".
+			$sql = "INSERT INTO blockchain (created_by_user_id, created_by_entity_id, time_created, transactions, transactions_duration, statechanged, hash) VALUES (".
 	      							"'{$block['user_id']}', ".
 	      							"'{$block['entity_id']}', ".
 	      							time().', '.
-	      							"'{$block['transactions_duration']}', ".
 	      							"'{$block['transactions']}', ".
+	      							"'{$block['transactions_duration']}', ".
 	      							"'{$block['statechanged']}', ".
-	      							"'{$hash}';";
-			if(mysqli_query($db, $sql_content)){
-	      		unset();
-			}
+	      							"'{$hash}');";
+
+			/*if(mysqli_query($db, $sql)){
+	      		unset($GLOBALS['transactions']);
+			}*/
+
 		}
     }
 
