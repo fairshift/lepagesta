@@ -13,38 +13,71 @@
 
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route, 'dataset' => $dataset));
 
-    $user_route['table'] = 'user';
+    $route['table'] = 'user';
 
     if($route['user_id']){
-      $user_route['id'] = $route['user_id'];
+      $route['id'] = $route['user_id'];
 
     } elseif($route['auth']){
-      $user_route['where']['auth'] = $route['auth'];
+      $route['where']['auth'] = $route['auth'];
 
     } elseif($route['email']){
-      $user_route['where']['email'] = $route['email'];
+      $route['where']['email'] = $route['email'];
 
     } elseif($route['username']){
-      $user_route['where']['username'] = $route['username'];
+      $route['where']['username'] = $route['username'];
 
     } elseif($route['email_confirmation_code']){
-      $user_route['where']['email_confirmation_code'] = $route['email_confirmation_code'];
+      $route['where']['email_confirmation_code'] = $route['email_confirmation_code'];
 
     } elseif($route['facebook_user_id']){
-      $user_route['where']['facebook_user_id'] = $route['facebook_user_id'];
+      $route['where']['facebook_user_id'] = $route['facebook_user_id'];
 
     } elseif($route['twitter_user_id']){
-      $user_route['where']['twitter_user_id'] = $route['twitter_user_id'];
+      $route['where']['twitter_user_id'] = $route['twitter_user_id'];
     }
 
-    if( ($user_id || $entity_id) && is_array($user_route) ){
-
-      $query = getNode(array('route' => $user_route));
-    }
+    $query = getNode(array('route' => $route));
 
     transaction(array('transaction' => $transaction));
 
     return $query;
+  }
+
+  function userNode(){
+
+    $db = $GLOBALS['db'];
+    $user_id = $GLOBALS['user']['id'];
+    $entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_represent or privilege_manage)
+
+    $input = func_get_args()[0];
+    $route = $input['route'];
+    $dataset = $input['dataset'];
+
+    $user = $input['node'];
+
+    if($user['time_email_confirmed'] > 0 
+      || $user['facebook_user_id'] > 0 
+      || $user['twitter_user_id'] > 0
+      /*|| $row['google_user_id'] > 0*/){
+      $user['accountConfirmed'] = true;
+
+      $user['facebook_user_id'] = ($user['facebook_user_id']) ? true : 0;
+      $user['twitter_user_id'] = ($user['twitter_user_id']) ? true : 0;
+    } else {
+      $user['accountConfirmed'] = false;
+    }
+
+    if($route['checkPassword']){
+      if($route['checkPassword'] == $user['password']){
+        $user['passwordMatch'] = true;
+      } else {
+        $user['passwordMatch'] = false;
+      }
+    }
+    $user['password'] = null;
+
+    return $user;
   }
 
   //This part is called within getNode/getLine, to plug in user-specific datasets

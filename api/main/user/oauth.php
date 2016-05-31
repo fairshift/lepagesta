@@ -50,33 +50,23 @@ function loginFacebook(){
 
     $logoutUrl = $facebook->getLogoutUrl();
     $auth = md5("LOL%I=ISUP".microtime());
-    $user = getUser('route' => array('id' => $user['id'], 'selector' => 'facebook_user_id', 'dataset' => array('me')))['state'];
+    $user = getUser(array('route' => array('facebook_user_id' => $user['id'])));
 
     if(!$user){
 
-      if($GLOBALS['site']['id']){
-        $sql_site_field = ', auth_site_id';
-        $sql_site_value = ", '{$GLOBALS['site']['id']}'";
-      }
-
-      $sql = "INSERT INTO user (facebook_user_id, username, time_registered, last_visit, auth {$sql_site_field}) VALUES (".
+      $sql = "INSERT INTO user (facebook_user_id, username, time_registered, last_visit, auth) VALUES (".
                   "'".$user_profile['id']."', ".
                   "'".$user_profile['name']."', ".
                   "'".time()."',".
                   "'".time()."',".
-                  "'".$auth."'".
-                  "{$sql_site_value});";
+                  "'".$auth."');";
 
       mysqli_query($db, $sql);
-      $user = getUser($db, $user_profile->id, 'facebook_user_id', array('me'));
+      $user = getUser(array('route' => array('facebook_user_id' => $user['id'])));
 
     } else {
 
-        if($GLOBALS['site']['id']){
-          $sql_site = ", auth_site_id = '{$GLOBALS['site']['id']}'";
-        }
-
-        mysqli_query($db, "UPDATE user SET last_visit = '".time()."', auth = '".$auth."' {$sql_site} WHERE facebook_user_id = '".$user_profile['id']."'");
+        mysqli_query($db, "UPDATE user SET last_visit = '".time()."', auth = '".$auth."' WHERE facebook_user_id = '".$user_profile['id']."'");
         $user['last_visit'] = time();
         $user['auth'] = $auth;
     }

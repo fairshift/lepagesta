@@ -4,40 +4,50 @@
   function getEntity(){
 
     $db = $GLOBALS['db'];
- 	  $site_id = $GLOBALS['site']['id'];
- 	  $user_id = $GLOBALS['user_id'];
+    $user_id = $GLOBALS['user']['id'];
+    $entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null; //user acting on behalf of a circle of people (requires privilege_represent or privilege_manage)
 
-    if(in_array("auth", $preset)){
-      $select = "id, id AS user_id, username, email, time_registered, last_visit, email_confirmation_time, facebook_user_id, twitter_user_id, site_language_id";
-    } elseif(in_array("me", $preset)){
-      $select = "id, id AS user_id, auth, password, username, email, email_confirmation_code, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id, site_language_id, profile_picture";
-    } elseif(in_array("avatar", $preset)){
-      $select = "id, id AS user_id, auth, password, username, email_confirmation_time, time_registered, last_visit, facebook_user_id, twitter_user_id, site_language_id, profile_picture";
+    $input = func_get_args()[0];
+
+    //Function router
+    $route = $input['route'];
+    $dataset = (!$input['dataset']) ? '*' : $input['dataset'];
+
+    $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route, 'dataset' => $dataset));
+
+    $user_route['table'] = 'user';
+
+    if($route['user_id']){
+      $user_route['id'] = $route['user_id'];
+
+    } elseif($route['auth']){
+      $user_route['where']['auth'] = $route['auth'];
+
+    } elseif($route['email']){
+      $user_route['where']['email'] = $route['email'];
+
+    } elseif($route['username']){
+      $user_route['where']['username'] = $route['username'];
+
+    } elseif($route['email_confirmation_code']){
+      $user_route['where']['email_confirmation_code'] = $route['email_confirmation_code'];
+
+    } elseif($route['facebook_user_id']){
+      $user_route['where']['facebook_user_id'] = $route['facebook_user_id'];
+
+    } elseif($route['twitter_user_id']){
+      $user_route['where']['twitter_user_id'] = $route['twitter_user_id'];
     }
 
-    if($selector == 'auth'){
-      $where = "auth = '{$id}'";
-    } elseif($selector == 'user_id'){
-      $where = "id = '{$id}'";
-    } elseif($selector == 'email'){
-      $where = "email = '{$id}'";
-    } elseif($selector == 'username'){
-      $where = "username = '{$id}'";
-    } elseif($selector == 'email_confirmation_code'){
-      $where = "email_confirmation_code = '{$id}'";
-    } elseif($selector == 'facebook_user_id'){
-      $where = "facebook_user_id = '{$id}'";
-   	} elseif($selector == 'twitter_user_id'){
-      $where = "twitter_user_id = '{$id}'";
-   	}
+    if( ($user_id || $entity_id) && is_array($user_route) ){
 
-    $sql = "SELECT $select FROM user WHERE $where";
- 
-    $result = mysqli_query($db, $sql);
-    $response = mysqli_fetch_array($result, MYSQLI_ASSOC));
+      if($query = getNode(array('route' => $user_route))){
+        $query = unzip($GLOBALS['nodes']['user'][current($query)['id']]);
+      }
+    }
 
-    transaction(array('function' => __FUNCTION__));
+    transaction(array('transaction' => $transaction));
 
-	  return $response;
+    return $query;
   }
 ?>

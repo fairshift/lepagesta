@@ -1,8 +1,6 @@
 <?php
-
-$id = 1;
-
-if($id != (0 || 2)){
-  echo $id;
-}
+$array = array('berries', 'apples');
+print_r($array);
+$test = asort($array);
+print_r($test);
 ?>

@@ -1,5 +1,4 @@
 <?php
-//https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Plant_nodes_c.jpg/200px-Plant_nodes_c.jpg
 
   //Create / update content node - lines, (localized) states, values, keywords, words (histogram), 
     function updateNode(){

@@ -1,18 +1,18 @@
 <?php
 //Load database functions
+  includer('router');
+  
   includer('database/dbwrapper'); //database session
   includer('database/helper'); //database session
 
   includer('database/safety'); //functions to keep interactions with API/DB safe
   includer('blockchain/block'); //emulation of a few blockchain's native functionalities (storing calls and data state changes as transactions)
-  includer('content/nodeGet');
-
     includer('database/cache'); //caching data states
     includer('blockchain/block'); //emulation of blockchain to store calls and data state changes as transactions
     //includer('merkletree'); //data validation algorithm (currently not in use)
 
-    includer('user/auth'); //session, authentication, sign in/up to service
     includer('user/oauth'); //social media & other services integrations
+    includer('user/auth'); //session, authentication, sign in/up to service
     includer('user/user'); //
     includer('user/entity'); //
 
@@ -32,6 +32,4 @@
       //includer('content/reflection');
       //includer('content/value');
       //includer('content/keyword');
-
-    //includer('site/sphere'); //sphere is an extra dimension to circles, a wormhole to something undefined as of yet
 ?>

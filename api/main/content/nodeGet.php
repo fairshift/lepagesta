@@ -1,4 +1,6 @@
 <?php
+//https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Plant_nodes_c.jpg/200px-Plant_nodes_c.jpg
+
 //To-do - support nesting new content on an existing node line that's most relevant
 
 	if(!isset($GLOBALS['nodes'])){
@@ -41,27 +43,6 @@
 
     function getNode(){ //A call to load a node and N(=horizon-cascade) levels of related nodes comes...
 
-		/* When compiled node and related nodes come from db cache...
-			<- build a list of current node's unavailable by traversing node array
-				-node/table
-				-dataset
-				-line
-					-node_circle
-					-state
-					-dataset
-
-		 * -> Save to $GLOBALS['nodes'] cache
-		 	 - response array of current node (table_name, entry_id & if node: node_id, line_id)
-			 - table/node array of current and related nodes
-			 - build cache table relations list of all nodes
-
-		 * -> When updateNodeCache ($db) - seperates each supplied node_line per available language_id's
-
-		What do to with unavailable nodes?
-		- remove them from array (would they be needed, later on?)
-		- keep them there and remove them later on
-		*/
-
  		$db = $GLOBALS['db'];
  		$user_id = $GLOBALS['user']['id'];
  		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
@@ -85,15 +66,17 @@
 
 		$transaction = 			transaction(array('function' => __FUNCTION__, 'route' => $route, 'dataset' => $input['dataset']));
 
-    	if( $route['node_id'] || ($route['table'] && ($route['id'] || is_array($route['where']))) && $horizon >= 0 ){
+		$query = null;
+
+    	if( $route['node_id'] || ($route['table'] && ($route['id'] || $route['where'])) && $horizon >= 0 ){
 
 		/* Is it cached in one of the sources: getLocalNode ($GLOBALS), getCachedNode ($db)? */
-			if(!isset($route['where'])){
+			if(!isset($route['where']) && !isset($route['no-cache'])){
 
 	    		$node = getLocalNode($route); //check $GLOBALS['nodes'] cache
 	    		if($node){
 
-		  			$query = arrayAddDistinct($node, $query);
+		  			$query[] = $node;
 	    		} else {
 
 		    		$node = getCachedNode($route); //check DB node_cache
@@ -102,13 +85,18 @@
 						if($node['uncached-languages']){
 
 							$route['node_languages'] =	$node['uncached-languages'];
-							$buffer = $GLOBALS['nodes'][$node['response']['table']][$node['response']['node_id']];
+							$buffer = $node;
+							unset($buffer['line']);
+							unset($buffer['dataset']);
+							unset($buffer['languages']);
+							unset($buffer['related_nodes']);
 
-							$query[] = arrayMergeDistinct($node, compileNode(array('route' => $route, 'node' => $buffer)));
-						} else {
-
-							$query[] = $node;
+							if($buffer = compileNode(array('route' => $route, 'node' => $buffer))){
+								$node = arrayMergeDistinct($node, $buffer);
+							}
 						}
+
+						$query[] = $node;
 					}
 	    		}
 	    		unset($node);
@@ -126,8 +114,12 @@
 
 			    	$query = array();
 					$nodes = findNodes(array('route' => $route)); //this function could be a bit more optimized (read from $GLOBALS cache)
+
 			    	foreach( $nodes AS $node ){
 
+			    		//print_r($node);
+			    		$buffer_route = $route;
+			    		unset($buffer_route['where']);
 		    			$buffer_route['id'] = $node['id'];
 		    			$buffer_route['table'] = $node['table'];
 			    		if($node['node_id'] && $node['line_id']){
@@ -137,13 +129,18 @@
 			    		}
 
 			    		$node = getNode(array('route' => $buffer_route));
-			    		$query[] = arrayAddDistinct( $node , $query );
+			    		$query = arrayAddDistinct( $node , $query );
+
 			    	}
 				} else {
 
 					$query[] = compileNode(array('route' => $route));
 				}
 			}
+		}
+
+		if(count($query) == 1 && $query[0]){
+			$query = $query[0];
 		}
 
 		/*
@@ -159,7 +156,6 @@
 		return $query;
     }
 
-
   	//Node's local $GLOBALS['nodes'] cache - line_id sensitive (if it exists in this cache it exists in atleast one of user's spoken languages)
   	function getLocalNode($route){
 
@@ -174,10 +170,8 @@
 
 				//If data doesn't use node structure and is already cached
 
-				$query['response'] = array(	'table' => $route['table'], 
-											'id' => $route['id'] );
-
-				$query['related_nodes'] = $GLOBALS['nodes'][$route['table']][$route['id']]['related_nodes'];
+				$query = array(	'table' => $route['table'], 
+								'id' => $route['id'] );
 			}
 		}
 
@@ -192,21 +186,11 @@
 
 			//If data node line is already cached...
 
-			$query['response'] = array(	'table' => $route['table'], 
-										'id' => $route['id'],
-										'node_id' => $route['node_id'],
-										'line_id' => $route['line_id'] );
-
-			$query['related_nodes'] = merge_related_nodes( 	$GLOBALS['nodes'][$route['table']][$route['id']]['related_nodes'], 
-															$GLOBALS['nodes'][$route['table']][$route['id']]['line'][$route['line_id']]['related_nodes'] );
-
-			$main_line_id = $GLOBALS['nodes'][$route['table']][$route['id']]['main_line_id'];
-
-			if($route['line_id'] != $main_line_id){
-
-				$query['related_nodes'] = merge_related_nodes( 	$GLOBALS['nodes'][$route['table']][$route['id']]['line'][$main_line_id]['related_nodes'],
-																$query['related_nodes'] );
-			}
+			$query = array(	'table' => $route['table'], 
+							'id' => $route['id'],
+							'node_id' => $route['node_id'],
+							'line_id' => $route['line_id'],
+							'languages' => $GLOBALS['nodes'][$route['table']][$route['id']]['line'][$route['line_id']]['languages'] );
 		}
 
 		transaction(array('transaction' => $transaction));
@@ -238,9 +222,11 @@
 			    	if(!$nodes){
 			    		$nodes = array();
 			    	}
-			    	$nodes = merge( $nodes, json_decode($nodes) );
+			    	$nodes = arrayMergeDistinct( $nodes, json_decode($row['nodes']) );
 
 			    	mysqli_query($db, "UPDATE node_cache SET time_called = ".time().", usage_count = '".($row['usage_count'] + 1)."' WHERE id = '{$row['id']}'");
+
+			    	$languages[] = $language_id;
 
 			    } else {
 			    	
@@ -257,11 +243,13 @@
 			}
 		}
 
-		if(count($query)){
-			$query['response'][] = array(	'table' => $route['table'], 
-											'id' => $route['id'],
-											'node_id' => $route['node_id'],
-											'line_id' => $route['line_id'] );
+		if(count($nodes)){
+			$GLOBALS['nodes'] = arrayMergeDistinct($GLOBALS['nodes'], $nodes);
+			$query = array(	'table' => $route['table'], 
+							'id' => $route['id'],
+							'languages' => $languages, 
+							'node_id' => $route['node_id'],
+							'line_id' => $route['line_id'] );
 		}
 
 		transaction(array('transaction' => $transaction));
@@ -292,8 +280,13 @@
 
 		$route['table'] = ($route['table']) ? $route['table'] : $node['table'];
 		$route['id'] = ($route['id']) ? $route['id'] : $node['id'];
-		$route['node_id'] = $node['node_id'];
-		$route['line_id'] = ($route['line_id']) ? $route['line_id'] : $node['line_id'];
+		if($node['node_id']){
+			$route['node_id'] = $node['node_id'];
+			$route['line_id'] = ($route['line_id']) ? $route['line_id'] : $node['main_line_id'];
+		} else {
+			unset($route['node_id']);
+			unset($route['line_id']);
+		}
 
 		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route, 'dataset' => $input['dataset']));
 
@@ -306,13 +299,13 @@
 	    		if($nodes = undersigned($node)){ //store undersigned users and entities 
 	    			$node['related_nodes'] = $nodes;
 	    		}
-				$node['node_line'] = $line;
+				$node['line'] = $line;
 
 				$node['languages'] = array();
-				if($GLOBALS['nodes'][$route['table']][$route['id']]['languages']){
-					$buffer_languages = $GLOBALS['nodes'][$route['table']][$route['id']]['languages'];
+				if( $GLOBALS['nodes'][$route['table']][$route['id']]['line'][$route['line_id']]['languages'] ){
+					$buffer_languages = $GLOBALS['nodes'][$route['table']][$route['id']]['line'][$route['line_id']]['languages'];
 				}
-				foreach($line[$route['line_id']]['node_state'] AS $language_id => $state){
+				foreach($line[$route['line_id']]['state'] AS $language_id => $state){
 					$node['languages'] = arrayAddDistinct($language_id, $node['languages']);
 				}
 
@@ -322,7 +315,7 @@
 								'node_id' => $route['node_id'],
 								'line_id' => $route['line_id'] );
 
-				$GLOBALS['updateNodeCache'] = arrayAddDistinct($query);
+				$GLOBALS['updateNodeCache'] = arrayAddDistinct($query, $GLOBALS['updateNodeCache']);
 
 				if($buffer_languages){
 					$node['languages'] = arrayMergeDistinct($node['languages'], $buffer_languages);
@@ -333,42 +326,52 @@
 									'line_id' => $route['line_id'] );
 				}
 
-				print_r($node);
-
-				//Dispatch node to local $GLOBALS['nodes'] cache
-				if($GLOBALS['nodes'][$route['table']][$route['id']]){
-					$GLOBALS['nodes'][$route['table']][$route['id']] = arrayMergeDistinct($node, $GLOBALS['nodes'][$route['table']][$route['id']]);
-				} else {
-					$GLOBALS['nodes'][$route['table']][$route['id']] = $node;
-				}
-				if(!isset($GLOBALS['nodes'][$route['node_id']])){ //alias
-		    		$GLOBALS['nodes'][$route['node_id']]['table'] = $route['table'];
-		    		$GLOBALS['nodes'][$route['node_id']]['id'] = $route['id'];
-				}
+				//Load table-specific datasets - $dataset = ('*' || array('something', ...));
+    			$function = $route['table'].'Node';
+	    		if(function_exists($function)){
+	    			if($buffer = $function(array('route' => $route, 'node' => $node, 'dataset' => $dataset))){ //call {$table}Line() function
+	    				$node = arrayMergeDistinct($node, $buffer);
+	    			}
+	    		}
 	    	}
 
     	} elseif( $node['id'] && !$node['node_id'] ){ //this table item isn't using node database pattern
 
 			if(!$node['language_id'] || ($node['language_id'] && in_array($node['language_id'], $languageList))){
 
-	    		if($nodes = undersigned($table)){ //store undersigned users and entities 
+	    		if($nodes = undersigned($node)){ //store undersigned users and entities 
 	    			$node['related_nodes'] = $nodes;
 	    		}
 
 				if($node['language_id']){
 					$query = array(	'table' => $route['table'], 
-									'id' => $table['id'],
+									'id' => $node['id'],
 									'languages' => array($node['language_id']) );
-					$node['languages'] = array($node['language_id']);
 				} else {
 					$query = array(	'table' => $route['table'], 
-									'id' => $table['id'] );
+									'id' => $node['id'] );
 				}
 
-				//Dispatch node to local $GLOBALS['nodes'] cache
-				if(!$GLOBALS['nodes'][$route['table']][$route['id']]){
-					$GLOBALS['nodes'][$route['table']][$route['id']] = $node;
-				}
+				//Load table-specific datasets - $dataset = ('*' || array('something', ...));
+    			$function = $route['table'].'Node';
+	    		if(function_exists($function)){
+	    			if($buffer = $function(array('route' => $route, 'node' => $node, 'dataset' => $dataset))){ //call {$table}Line() function
+	    				$node = arrayMergeDistinct($node, $buffer);
+	    			}
+	    		}
+			}
+		}
+
+		//Dispatch node to local $GLOBALS['nodes'] cache
+		if($node['id']){
+			if($GLOBALS['nodes'][$route['table']][$route['id']]){
+				$GLOBALS['nodes'][$route['table']][$route['id']] = arrayMergeDistinct($GLOBALS['nodes'][$route['table']][$route['id']], $node);
+			} else {
+				$GLOBALS['nodes'][$route['table']][$route['id']] = $node;
+			}
+			if(isset($route['node_id']) && !isset($GLOBALS['nodes'][$route['node_id']])){ //alias
+	    		$GLOBALS['nodes'][$route['node_id']]['table'] = $route['table'];
+	    		$GLOBALS['nodes'][$route['node_id']]['id'] = $route['id'];
 			}
 		}
 
@@ -389,26 +392,28 @@
 
 		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    	if( ($route['table'] && $route['id']) ){
-    		
-    		if($route['node_id']){ //load content node
+    	if( $route['table'] && $route['id'] && !$route['node_id']){
 
-				$sql = 	"SELECT id AS node_id, table_name, entry_id, main_line_id FROM node WHERE id = '{$route['node_id']}'";
-
-    		} else {
-
+    		if($route['id']){
 	    		$sql_where[] = "id = '{$route['id']}'";
-	 			$sql = 	"SELECT *, id AS {$route['table']}_id  FROM {$route['table']} WHERE ".
-	  					implode(' AND ', $sql_where);
-	    	}
+    		}
 
-			$result = mysqli_query($db, $sql);
+ 			$sql = 	"SELECT *, id AS {$route['table']}_id  FROM {$route['table']} WHERE ".
+  					implode(' AND ', $sql_where);
+
+    	} elseif($route['node_id']){
+
+			$sql = 	"SELECT id AS node_id, entry_id, table_name, main_line_id FROM node WHERE id = '{$route['node_id']}'";
+    	}
+
+    	if($sql){
 			$i = 0;
-    		while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+    		$node = null;
+ 			$result = mysqli_query($db, $sql);
+    		if($node = mysqli_fetch_array($result, MYSQLI_ASSOC)){
 
-    			if($route['node_id']){
+    			if($node['node_id']){
 
-    				$node = $row;
     				$node['table'] = $node['table_name'];
     				unset($node['table_name']);
 
@@ -419,14 +424,25 @@
 				    if($table = mysqli_fetch_array($table, MYSQLI_ASSOC)){
 
 						$node = arrayMergeDistinct($node, $table);
+					} else {
+						$node = null;
 					}
 
     			} else {
 
-    				$node = $row;
+    				$sql = 	"SELECT id AS node_id, table_name, main_line_id FROM node WHERE table_name = '{$route['table']}' AND entry_id = '{$node['id']}'";
+
+					$node_result = mysqli_query($db, $sql);
+				    if($node_result = mysqli_fetch_array($node_result, MYSQLI_ASSOC)){
+
+						$node = arrayMergeDistinct($node, $node_result);
+					 	$node['table'] = $node['table_name'];
+						unset($node['table_name']);
+					}
+
     			}
-			}
-		}
+    		}
+    	}
 
 		transaction(array('transaction' => $transaction));
 		return $node;
@@ -496,7 +512,7 @@
 					//Load table-specific datasets - $dataset = ('*' || array('something', ...));
 	    			$function = $route['table'].'Line';
 		    		if(function_exists($function)){
-		    			$buffer = $function(array('route' => $route, 'dataset' => $dataset)); //call {$table}Line() function
+		    			$buffer['dataset'] = $function(array('route' => $route, 'dataset' => $dataset)); //call {$table}Line() function
 		    			$response = arrayMergeDistinct($response, $buffer);
 		    		}
 
@@ -614,8 +630,6 @@
 		    }
 		}
 
-		print_r($query);
-
 		transaction(array('transaction' => $transaction));
     	return $query;
     }
@@ -643,9 +657,9 @@
   		foreach($row as $field => $id){
 	    	if($id){
 
-		      	if( strpos('user_id', $field) ){
-		          	/*$node = getUser( array('route' => array('user_id' => $id)) );
-					$nodes = arrayAddDistinct($node, $nodes);*/
+		      	if( strpos($field, 'user_id') ){
+		          	$node = getUser( array('route' => array('user_id' => $id)) );
+					$nodes = arrayAddDistinct($node, $nodes);
 					//echo $id;
 		      	} //+entity
 	    	}
@@ -655,6 +669,71 @@
 	    return $nodes;
   	}
 
+    function findNodes(){
+
+ 		$db = $GLOBALS['db'];
+ 		$user_id = $GLOBALS['user']['id'];
+ 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
+
+        $input = func_get_args()[0];
+
+        //Function router
+    	$route = $input['route']; //node_id || table_name & entry_id || where - necessary
+
+		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
+
+    	if( $route['table'] && $route['where'] ){ //search for entry_id by various parameters
+
+    		if($route['where'] != '*'){
+				foreach($route['where'] AS $key => $array){
+					if(is_array($array)){
+						foreach($array AS $field => $value){
+							$sql_or[] = "{$field} = '{$value}'";
+						}
+						$sql_where[] = '('.implode(' OR ', $sql_or).')';
+					} else {
+						$sql_where[] = "{$key} = '{$array}'";
+					}
+				}
+				$where =  'WHERE '.implode(' AND ', $sql_where).' ';
+			}
+
+ 			$sql = 	"SELECT id FROM {$route['table']} ".$where;
+
+			/*
+			Output style:
+			$node array(	'table' => $table_name, 
+							'id' => $entry_id,
+							//if node
+								,'node_id' => $node_id,
+							 	 'line_id' => $line_id );
+			*/
+
+			$result = mysqli_query($db, $sql);
+			$i = 0;
+    		while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
+
+				$query[$i]['table'] = $route['table'];
+				$query[$i]['id'] = $row['id'];
+
+				$sql = 	"SELECT id, main_line_id FROM node WHERE table_name = '{$route['table']}' AND entry_id = '{$row['id']}'";
+
+				$node_result = mysqli_query($db, $sql);
+			    if($node = mysqli_fetch_array($node_result, MYSQLI_ASSOC)){
+
+					$query[$i]['node_id'] = $node['id'];
+					$query[$i]['line_id'] = $node['main_line_id'];
+				}
+
+				$i++;
+			}
+		}
+
+		transaction(array('transaction' => $transaction));
+		return $query;
+    }
+
+    //TO-DO
   	function updateNodeCache($route, $query){
 
 		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
@@ -709,109 +788,4 @@
 		return $query;
   	}
 
-    function findNodes(){
-
- 		$db = $GLOBALS['db'];
- 		$user_id = $GLOBALS['user']['id'];
- 		$entity_id = ($GLOBALS['entity']['id']) ? $GLOBALS['entity']['id'] : null;
-
-        $input = func_get_args()[0];
-
-        //Function router
-    	$route = $input['route']; //node_id || table_name & entry_id || where - necessary
-
-		$transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
-
-    	if( $route['table'] && is_array($route['where']) ){ //search for entry_id by various parameters
-
-			foreach($route['where'] AS $key => $array){
-				if(is_array($array)){
-					foreach($array AS $field => $value){
-						$sql_or[] = "{$field} = '{$value}'";
-					}
-					$sql_where[] = '('.implode(' OR ', $sql_or).')';
-				} else {
-					$sql_where[] = "{$key} = '{$array}'";
-				}
-			}
-
- 			$sql = 	"SELECT *, id AS {$route['table']}_id  FROM {$route['table']} WHERE ".
-  					implode(' AND ', $sql_where);
-
-			/*
-			Output style:
-			$node array(	'table' => $table_name, 
-							'id' => $entry_id,
-							//if node
-								,'node_id' => $node_id,
-							 	 'line_id' => $line_id );
-			*/
-
-			$result = mysqli_query($db, $sql);
-			$i = 0;
-    		while($row = mysqli_fetch_array($result, MYSQLI_ASSOC)){
-
-				$query[$i]['table'] = $route['table'];
-				$query[$i]['id'] = $row['id'];
-
-				$sql = 	"SELECT id, main_line_id FROM node WHERE table_name = '{$route['table']}' AND entry_id = '{$row['id']}'";
-
-				$node_result = mysqli_query($db, $sql);
-			    if($node = mysqli_fetch_array($node_result, MYSQLI_ASSOC)){
-
-					$query[$i]['node_id'] = $node['id'];
-					$query[$i]['line_id'] = $node['main_line_id'];
-				}
-
-				$i++;
-			}
-		}
-
-		transaction(array('transaction' => $transaction));
-		return $query;
-    }
-
-/*
-//Sample script
-
-getNearby
-	find nearby data
-	foreach row
-
-		getNode (example: 'user')
-		(
-			getGlobalsNode? getCompiledNode? no?
-			cascading: 0
-			horizon: 1
-
-			languageList check? language_id?
-			table (+undersigned)
-			node (+undersigned)
-				foreach languageList as language_id
-					cascading < horizon? dataset
-					line (+undersigned)
-						state (+undersigned)
-						cascading < horizon? dataset
-						relations
-			relations
-
-			cascading 0? !globals['nodes']? !node db cache? compileNode (by language_id)
-		)
-
-			dataset
-				getNode (example: 'user_circle')
-				(
-					getGlobalsNode? getCompiledNode? no?
-					cascading: 1
-
-					table (+undersigned)
-					node (+undersigned)
-						foreach languageList as language_id
-							cascading < horizon? dataset
-							line (+undersigned)
-								state (+undersigned)
-								cascading < horizon? dataset
-				)
-
-*/
 ?>

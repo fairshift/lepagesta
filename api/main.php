@@ -43,35 +43,36 @@
   $transaction = transaction(array('function' => 'main.php', 'route' => $_REQUEST));
 
   //Load languages
-  ///listLanguages(); //list all languages in $GLOBALS['languages'] (field ['googletranslate'] can be 0 or 1)
   //$GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query
   $GLOBALS['default_language_id'] = 20; //default language is English
-
   $GLOBALS['node_languages'][] = $GLOBALS['default_language_id'];
   //$GLOBALS['node_languages'] = arrayAddDistinct($, $GLOBALS['node_languages']); //user's spoken languages
+  $response['languages'] = getLanguageList(array('route' => array('languages' => $GLOBALS['node_languages'])));
+
+//Social media based authentication
+  //Facebook login
+    if(!empty($_GET['code']) && !empty($_GET['response']) 
+      && !empty($_SESSION['social_login_user_id'])){
+        loginFacebook();
+    }
+  //Twitter login
+    if(!empty($_GET['oauth_verifier']) && !empty($_SESSION['oauth_token']) && !empty($_SESSION['oauth_token_secret'])
+      && !empty($_SESSION['social_login_user_id'])){
+      loginTwitter();
+    }
+//User authentication & basic necessary data
+  $GLOBALS['profile'] = authenticate(array('route' => array( 'auth' => input( 'auth', 'md5', 32, 32 ), 'dataset' => array('user_language') )));
 
 //Site-specific functions - validate domain / site_id, passed from frontend
-  getSite(array('route' => array( 'domain' => input('o', 'string', 1, 64), //passed when user first loads a site
-                                  'site_id' => input('s', 'integer', 1, 11)) )); //passed on all next loads site_id
+  $GLOBALS['site'] = getSite(array('route' => array( 'domain' => input('o', 'string', 1, 64), //passed when user first loads a site
+                                                     'site_id' => input('s', 'integer', 1, 11)) )); //passed on all next loads site_id
 
-//Now when site domain is established, include the rest of functionalities (customized/$domain/ folder is now ready for use)
-  includer('include');
+//Is user acting on behalf of an entity? ˇ requires permission_represent, permission_manage within a circle
+  //$GLOBALS['entity'] = getEntity(array('entity_id' => input('entity_id', 'integer', 1, 11)));
 
 /* 
   with Ethereum's blockchain, user accounts are hashes that already exist
 */
-//User authentication & basic necessary data
-  $GLOBALS['user'] = authenticate(array('route' => array('auth' => input( 'auth', 'md5', 32, 32 ))))['state'];
-
-//Is user acting on behalf of an entity? ˇ requires permission_represent, permission_manage within a circle
-  $GLOBALS['entity'] = getEntity(array('entity_id' => input('entity_id', 'integer', 1, 11)));
-
-/* 
-  $GLOBALS['nodes'] is a cache for data for this call (so that a single data node is only queried from DB once per call)
-  TODO - $GLOBALS['sent-nodes'] is a cache for data for current session, so that a single data node is only sent out once per session (file cache with auth as key, changing per each session)
-*/
-  //loadSentNodes($_REQUEST['auth']); //TODO
-
 
 //Call to API 
   if(strpos($_REQUEST['call'], '/') > 0){
@@ -82,14 +83,13 @@
     $GLOBALS['o'] = $_REQUEST['call']; //object
   }
 
-//Router
-  includer('router.php'); //route call: object/function   <---   data intake
+  $response = router(); //route call: object/function   <---   data intake
 
-//Safe user profile data response (how about new auth key everytime?)
-  $response['user'] = safeProfileData($GLOBALS['user']); //$response['user']['status']; equals 'welcome' when user is confirmed (email, Facebook, Twitter)
+  $response['profile'] = $GLOBALS['profile'];
+  $response['site'] = $GLOBALS['site'];
 
 //JSON response
-  $response['nodes'] = $GLOBALS['nodes']; //TO-DO $GLOBALS['sent-nodes'] session cache completed with $GLOBALS['nodes'] cache
+  $response['nodes'] = $GLOBALS['nodes']; //TO-DO don't send out what has already been sent ($GLOBALS['sent-nodes'] array)
   if(isset($response)){
     echo json_encode($response);
   }

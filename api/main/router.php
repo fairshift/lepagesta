@@ -1,5 +1,6 @@
 <?php
 //Call to API is following routes...
+function router(){
   switch($GLOBALS['o']){ //route call: object/function   <---   data intake
 
   //Stream of fresh data
@@ -59,7 +60,7 @@
       }*/
       break;
 
-    case 'nameSpace': //user/content_state OR circle/content_branch (combinations among user & circle and content_branch & content_state) 
+    case 'namespace': //user/content_state OR circle/content_branch (combinations among user & circle and content_branch & content_state) 
       if($GLOBALS['f'] == 'add'){
         
       }
@@ -131,12 +132,11 @@
       break;
 
   //Site language - adjusts to user language
-    case 'siteText':
-      $response = siteText($GLOBALS['site']['id']);
-      break;
-
-    case 'languages':
-      $response = $GLOBALS['languages'];
+    case 'localization':
+      if($GLOBALS['site']['id']){
+        $route['site_id'] = $GLOBALS['site']['id'];
+        $response['siteText'] = getLocalization(array('route' => $route));
+      }
       break;
 
   //Register / signin (user account)
@@ -148,7 +148,7 @@
       $route['password_confirm'] =  input('password_confirm', 'string', 6, 32);
       $route['username'] =          input('username', 'string', 3, 32);
 
-      $response = passThrough('route' => $route);
+      $response = passThrough(array('route' => $route));
       break;
 
     case 'loginFacebook':
@@ -165,12 +165,12 @@
 
     case 'confirm':
       $route['code'] = input('code', 'string', 32, 32);
-      $response = confirmEmail('route' => $route);
+      $response = confirmEmail(array('route' => $route));
       break;
 
     case 'resendConfirmation':
       $route['email'] = input('email', 'email', 1, 64);
-      $response = resendConfirmation('route' => $route);
+      $response = resendConfirmation(array('route' => $route));
       break;
 
 //Development horizon
@@ -188,4 +188,7 @@
       //
       break;
   }
+
+  return $response;
+}
 ?>
