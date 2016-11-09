@@ -502,13 +502,15 @@
 		    			$query[$line_id]['related_nodes'] = $undersigned['related_nodes']; //store a list of related users
 		    		}
 
-		    		//Load these datasets with all nodes
+		    		//Load these datasets by default, whenever available
 	    			/*$response['node_circle'] = getCirclesBy( array('route' => array( 	'node_id' => $route['node_id'], 
 	    																				'line_id' => $row_line['id'])) );
 
 	    			$response['node_reflection'] = getReflections( array('route' => array( 	'node_id' => $route['node_id'], 
-	    																						'line_id' => $row_line['id'])) );*/
+	    																						'line_id' => $row_line['id'])) );
 
+	    			$response['node_languages']*/
+	    									
 					//Load table-specific datasets - $dataset = ('*' || array('something', ...));
 	    			$function = $route['table'].'Line';
 		    		if(function_exists($function)){
@@ -607,15 +609,18 @@
 
 				$sql_where['language_id'] = "language_id = '{$language_id}'";
 
-				//Get recent content state for each field
+				//Get current state of content for each field
 	    		foreach($input['template'] AS $field => $content){
 
 	    			if(!in_array($field, array('id', 'node_id', 'main_line_id', 'table', 'entry_id', 'created_by_user_id', 'created_by_entity_id', 'time_created', 'time_updated', 'closed_by_user_id', 'closed_by_entity_id', 'time_closed', 'removed_by_user_id', 'removed_by_entity_id', 'removed_time'))){
 
 	    				$sql_where['field'] = "field = '{$field}'";
 
-	    				if($route['pointer_time_state'])
-					 	$sql = 	'SELECT * FROM node_state WHERE '.implode(' AND ', $sql_where).' ORDER BY current DESC, id DESC LIMIT 1';
+	    				if($route['pointer_time_state'] && $route['pointer_time_state'] != 'current'){
+	    					$sql = 'SELECT * FROM node_state WHERE '.implode(' AND ', $sql_where).' ORDER BY current DESC, id DESC LIMIT 1';
+	    				} else {
+					 		$sql = 'SELECT * FROM node_state WHERE '.implode(' AND ', $sql_where).' ORDER BY current DESC, id DESC LIMIT 1';
+					 	}
 
 						$result = mysqli_query($db, $sql);
 						if($content = mysqli_fetch_array($result, MYSQLI_ASSOC)){

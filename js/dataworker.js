@@ -67,26 +67,15 @@ function getLocalData(args){
                 storage[storageType].from('node').where(cursor).done(function(node){
                     //stored data is older than sync_interval
                     //nodes or parts of nodes are missing
-                        $.parseJSON(node);
-                    });
-                })
+                    $.parseJSON(node);
+                 });
             });
+        });
             response['status_code'].push('localdb_'+storageType);
             response['status_code'].push('localdb_success');
         } else {
             response['status_code'].push('localdb_nodata');
         }
-
-      df.done(function (items) {
-        var n = items.length;
-        for (var i = 0; i < n; i++) {
-          renderTodo(items[i]);
-        }
-      });
-
-  df.fail(function (e) {
-    console.error(e);
-  })
         }
     }
 }
@@ -99,7 +88,16 @@ function putLocalData(){
     if(!!window.Worker){
         var storage = self.db;
     }
-    storage[.put('people', {name: 'John', age: 10, sex: 'Male'}, 'id1');
+    /*var data = {
+        "text":todo.value,
+        "timeStamp":new Date().getTime()
+    };
+    db.put('call', data).fail(function(e) {
+        console.error(e);
+    });
+    db.put('node', data).fail(function(e) {
+        console.error(e);
+    });*/
 }
 
 if(!!window.Worker){
