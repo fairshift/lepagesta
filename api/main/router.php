@@ -1,7 +1,7 @@
 <?php
 //Call to API is following routes...
-function router(){
-  switch($GLOBALS['o']){ //route call: object/function   <---   data intake
+function router($o, $f){
+  switch($o){ //route call: object/function   <---   data intake
 
   //Stream of fresh data
     case 'fresh':
@@ -131,46 +131,36 @@ function router(){
       }*/
       break;
 
-  //Site language - adjusts to user language
-    case 'localization':
-      if($GLOBALS['site']['id']){
-        $route['site_id'] = $GLOBALS['site']['id'];
-        $response['siteText'] = getLocalization(array('route' => $route));
-      }
-      break;
-
   //Register / signin (user account)
     case 'passport':
-      //Signin
-      $route['email'] =             input('email', 'email', 1, 64);
-      $route['password'] =          input('password', 'string', 6, 32);
-      //+Register
-      $route['password_confirm'] =  input('password_confirm', 'string', 6, 32);
-      $route['username'] =          input('username', 'string', 3, 32);
 
-      $response = passThrough(array('route' => $route));
-      break;
+      if(!$f){
+        //Signin
+        $route['email'] =             input('email', 'email', 1, 64);
+        $route['password'] =          input('password', 'string', 6, 32);
+        //+Register
+        $route['password_confirm'] =  input('password_confirm', 'string', 6, 32);
+        $route['display_name'] =      input('display_name', 'string', 3, 32);
 
-    case 'loginFacebook':
-      $response = loginFacebook();
-      break;
+        $response = passThrough(array('route' => $route));
 
-    case 'loginTwitter':
-      $response = loginTwitter();
-      break;
+      } elseif($f == 'loginFacebook'){
+        $response = loginFacebook();
 
-    case 'checkUsername':
-      $response = usernameExists();
-      break;
+      } elseif($f == 'loginTwitter'){
+        $response = loginTwitter();
 
-    case 'confirm':
-      $route['code'] = input('code', 'string', 32, 32);
-      $response = confirmEmail(array('route' => $route));
-      break;
+      } elseif($f == 'checkDisplayName'){
+        $response = displayNameExists();
 
-    case 'resendConfirmation':
-      $route['email'] = input('email', 'email', 1, 64);
-      $response = resendConfirmation(array('route' => $route));
+      } elseif($f == 'confirm'){
+        $route['code'] = input('code', 'string', 32, 32);
+        $response = confirmEmail(array('route' => $route));
+
+      } elseif($f == 'resendConfirmation'){
+        $route['email'] = input('email', 'email', 1, 64);
+        $response = sendConfirmation(array('route' => $route));
+      }
       break;
 
 //Development horizon
@@ -186,6 +176,14 @@ function router(){
   //Plan horizon - looking ahead together, forming a common vision
     case 'project':
       //
+      break;
+
+  //Site language - adjusts to user language
+    case 'localization':
+      if($GLOBALS['site']['id']){
+        $route['site_id'] = $GLOBALS['site']['id'];
+        $response = getLocalization(array('route' => $route));
+      }
       break;
   }
 

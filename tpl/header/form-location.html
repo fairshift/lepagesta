@@ -1,0 +1,28 @@
+			    <div id="alternativeLocation">
+			      <form id="form_alternative_location">
+			        <div class="row">
+			          <div class="col-md-12"><
+			          	<div class="locationError">
+			            	{{location_undetected}} <a class="btn" onClick="refreshAutomaticLocation();">{{refresh}}</a> or <a class="btn" onClick="atl);">{{location_enter_manually}}</a>
+			            </div>
+			            <div class="locationManual">{{location_enter_current_address}}</div>
+			          </div>
+			        </div>
+			        <div class="row">
+			        	<div class="col-md-9 col-sm-6 col-xs-12">
+				        	<input id="form_alternative_location_address" type="text" name="address" placeholder="Enter street address" onFocus="alternativeLocation()" onKeyPress="addToMap(this)" maxlength="128"/>
+			        	</div>
+			        </div>
+
+			        <div class="row">
+			          <div class="col-md-9 col-sm-6 col-xs-12">
+			            <a onClick="setAlternativeLocation()" class="btn" style="width: 100%">{{location_confirm}}</a>
+			          </div>
+			          <div class="col-md-3 col-sm-6 col-xs-12">
+			            <a onClick="closeAlternativeLocation()" class="btn" style="width: 100%">{{cancel}}</a>
+			          </div>
+			        </div>
+			        <input type="hidden" name="lat" id="form_alternative_location_lat"/>
+			        <input type="hidden" name="lng" id="form_alternative_location_lng"/>
+			      </form>
+			    </div>

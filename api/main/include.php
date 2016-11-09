@@ -8,13 +8,13 @@
   includer('database/safety'); //functions to keep interactions with API/DB safe
   includer('blockchain/block'); //emulation of a few blockchain's native functionalities (storing calls and data state changes as transactions)
     includer('database/cache'); //caching data states
-    includer('blockchain/block'); //emulation of blockchain to store calls and data state changes as transactions
     //includer('merkletree'); //data validation algorithm (currently not in use)
 
     includer('user/oauth'); //social media & other services integrations
     includer('user/auth'); //session, authentication, sign in/up to service
     includer('user/user'); //
     includer('user/entity'); //
+    includer('user/transaction'); //emulation of blockchain to store calls and data state changes as transactions
 
     includer('site/site');
     includer('site/lang'); //language & translation functions

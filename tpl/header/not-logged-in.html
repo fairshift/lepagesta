@@ -1,7 +1,30 @@
-<div class="top-bar">
-    <div class="top-bar-left">
-		<div class="title-bar" data-responsive-toggle="example-menu" hide-for-small>
-	        <div class="title-bar-title">Fine gesture</div>
-	    </div>
-	  </div>
-</div>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+
+        <div class="navbar-header">
+          <btn type="btn" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only t-able t-nav_toggle">{{nav_toggle}}</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </btn>
+          <a class="navbar-brand t-able t-hashtag" onClick="open('about');">{{hashtag}}</a>
+        </div>
+
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav navbar-left">
+            <li class="dropdown">
+              <a class="dropdown-toggle" data-toggle="dropdown" role="btn" aria-haspopup="true" aria-expanded="false"><span class="t-able t-nav_outbreaks">{{outbreaks}}</span></a>
+              <ul class="dropdown-menu" id="nav_outbreaks">
+                <li><a onClick="openPortal(23);">Portal name - gesture tags</a></li>
+              </ul>
+            </li>
+          </ul>
+
+          <ul class="nav navbar-nav navbar-right">
+            <li><a onClick="open('location');" class="t-able t-location">{{location}}</a></li>
+          </ul>
+        </div>
+
+      </div>
+    </nav>

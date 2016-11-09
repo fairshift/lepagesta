@@ -1,11 +1,11 @@
 <?php
-//Cache works more efficiently when table has less entries and is therefore cleared after a set amount of time, while querys stay in chain forever unmodified (have I writen querys?)
-	//An examplary difference of how number of entries among querychain and cache might differ (in a small database)
-		//Blockchain length ------------------------------------------------------
-		//Cache length	 	----
+//Cache works more efficiently when table has less entries and is therefore cleared after a set amount of time, while statechanges stay in blockchain for as long as a given network remembers (in Ethereum, "forever" or until deleted)
+	//An examplary difference of how number of entries among blockchain and cache might differ (in a relatively small database)
+		//Blockchain length  ------------------------------------------------------
+		//Cache length	 	 ----
 
-  //Get existing cache - is holding cached datasets & their states for specific functions & inputs
-    function existingCache($transaction){
+  //Get existing cache - it's holding cached datasets & their states for specific API calls, as generated from inputs 
+    function existingCache($call){
 
     	$db = $GLOBALS['db'];
 

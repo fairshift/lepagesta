@@ -15,9 +15,15 @@
 
       if(isset($user['id'])){
 
-        mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
-        mysqli_query($db, "UPDATE user SET time_visited = '".time()."' WHERE auth = '{$route['auth']}'");
-        mysqli_commit($db);
+        try {
+          $db->autocommit(false);
+          $stmt = $db->prepare("UPDATE user SET time_visited = '".time()."' WHERE auth = '?'");
+          $stmt->bind_param('s',$auth);
+          $stmt->execute();
+          $db->commit();
+        } catch(Exception $e){
+            $db->rollback();
+        }
 
         $user['auth'] = $route['auth'];
 
@@ -30,12 +36,15 @@
 
       $auth = md5("LOL%I=ISUP".microtime());
 
-      mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
-      mysqli_query($db, 'INSERT INTO user (auth, auth_time, time_visited) VALUES ('.
-                  "'{$route['auth']}', ".
-                  "'".time()."', ".
-                  "'".time()."'" );
-      mysqli_commit($db);
+      try {
+        $db->autocommit(false);
+        $stmt = $db->prepare("INSERT INTO user (auth, auth_time, time_visited) VALUES ('?', '?', '?'");
+        $stmt->bind_param('sii',$auth, time(), time());
+        $stmt->execute();
+        $db->commit();
+      } catch(Exception $e){
+          $db->rollback();
+      }
 
       $user['auth'] = $route['auth'];
     }
@@ -102,16 +111,16 @@
     return $response;
   }
 
-  function displayNameExists(){
+  function usernameExists(){
 
     $user_id = $GLOBALS['user']['id'];
     $input = func_get_args()[0];
     $route = $input['route'];
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
-    if($user_id && $route['display_name']){
+    if($user_id && $route['username']){
 
-      $user = getUser(array('route' => array('where' => array('display_name' => $route['display_name']))))['response'];
+      $user = getUser(array('route' => array('where' => array('username' => $route['username']))))['response'];
 
       if($user['response']['id'] > 0){
         $response['status'] = "exists";
@@ -135,13 +144,13 @@
 
     if(!getUser(array('route' => array('email' => $route['email'])))
       && $route['password'] == $route['password_confirm'] 
-      && !getUser(array('route' => array('display_name' => $route['display_name'])))
+      && !getUser(array('route' => array('username' => $route['username'])))
     ){
 
       $email_confirmation_code = md5("LOL%I=ISUP".microtime());
     
-      $sql = "INSERT INTO user (display_name, password, email, time_created, email_confirmation_code, time_email_confirmed, time_visited) VALUES (".
-                  "'".$route['display_name']."', ".
+      $sql = "INSERT INTO user (username, password, email, time_registered, email_confirmation_code, time_email_confirmed, time_visited) VALUES (".
+                  "'".$route['username']."', ".
                   "'".md5($route['password'])."', ".
                   "'{$route['email']}', ".
                   "'".time()."', ".
@@ -150,7 +159,7 @@
                   "'".time()."');";
       mysqli_query($db, $sql);
 
-      mailer($route['email'], array('email_confirmation_code' => $email_confirmation_code, 'display_name' => $route['display_name']), 'confirmation');
+      mailer($route['email'], array('email_confirmation_code' => $email_confirmation_code, 'username' => $route['username']), 'confirmation');
 
       $user = getUser(array('route' => array('auth' => $auth)));
     }
@@ -185,7 +194,7 @@
     return $response;
   }
 
-  function sendConfirmation(){
+  function resendConfirmation(){
 
     $user_id = $GLOBALS['user']['id'];
     $input = func_get_args()[0];
@@ -196,7 +205,7 @@
     $user = $GLOBALS['user'][$user['id']];
 
     if($user['email_confirmation_code'] > 0 && $user['time_email_confirmed'] == 0){
-      mailer($user['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'display_name' => $user['display_name']), 'confirmation');
+      mailer($user['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'username' => $user['username']), 'confirmation');
       $response = true;
     }
 

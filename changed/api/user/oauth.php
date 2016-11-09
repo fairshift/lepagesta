@@ -18,8 +18,8 @@ function loginFacebook(){
 
   // Create our Application instance (replace this with your appId and secret).
   $facebook = new Facebook(array(
-    'appId'  => $social_login['facebook']['appId'],
-    'secret' => $social_login['facebook']['secret'],
+    'appId'  => '1726534820894448',
+    'secret' => '19393a3f88a1681ba94cc631a8c0ffc3',
   ));
 
   // Get User ID
@@ -54,7 +54,7 @@ function loginFacebook(){
 
     if(!$user){
 
-      $sql = "INSERT INTO user (facebook_user_id, display_name, time_created, last_visit, auth) VALUES (".
+      $sql = "INSERT INTO user (facebook_user_id, username, time_registered, last_visit, auth) VALUES (".
                   "'".$user_profile['id']."', ".
                   "'".$user_profile['name']."', ".
                   "'".time()."',".
@@ -113,12 +113,15 @@ function loginFacebook(){
 
           if(!$_REQUEST['f'] == 'loginFacebook'){
 
-              redirect($site_url.'?auth='.$auth);
+              redirect("http://fairshift.org?auth=".$auth);
+
           }
+          //header("Location: http://fairshift.org/?auth=".$auth);
 
       } else {
 
           $row['status_code'] = false;
+          //header("Location: http://fairshift.org/");
       }
   }
 
@@ -141,7 +144,7 @@ function loginTwitter(){
   if(!empty($_GET['oauth_verifier']) && !empty($_SESSION['oauth_token']) && !empty($_SESSION['oauth_token_secret'])){
 
       // TwitterOAuth instance, with two new parameters we got in twitter_login.php
-      $twitteroauth = new TwitterOAuth($social_login['twitter']['key'], $social_login['twitter']['secret'], $_SESSION['oauth_token'], $_SESSION['oauth_token_secret']);
+      $twitteroauth = new TwitterOAuth('iFvufysWxTVK1WB9hm9N9jjNU', '2eDJgHfjDnVAwEnJF7uJnxo1VsCmx7M0gyv8PeaX1LB78hedLw', $_SESSION['oauth_token'], $_SESSION['oauth_token_secret']);
 
       // Let's request the access token
       $access_token = $twitteroauth->getAccessToken($_GET['oauth_verifier']);
@@ -164,10 +167,9 @@ function loginTwitter(){
 
           if(!$user){
 
-            $sql = "INSERT INTO user (twitter_user_id, display_name, time_created, time_updated, last_visit, auth, auth_site_id) VALUES (".
+            $sql = "INSERT INTO user (twitter_user_id, username, time_registered, last_visit, auth, auth_site_id) VALUES (".
                       "'".$user_info->id."', ".
                       "'".$user_info->name."', ".
-                      "'".time()."',".
                       "'".time()."',".
                       "'".time()."',".
                       "'".$auth."',".
@@ -183,9 +185,9 @@ function loginTwitter(){
             transaction(array('function' => __FUNCTION__));
           }
 
-          storeTransaction();
+          newBlock();
 
-          redirect($site_url.'?auth='.$auth);
+          redirect("http://fairshift.org?auth=".$auth);
 
       } else {
 
@@ -237,7 +239,7 @@ Error log:
 */
 
 function loginGoogle(){
-
+/*
 //Google API PHP Library includes
     require_once 'Google/autoload.php';
 
@@ -305,6 +307,7 @@ function loginGoogle(){
     }
 
     return $row;
+    */
 }
 
 /*if(isset($_GET['google']) || (isset($_GET['code']) && !isset($_GET['state']))){

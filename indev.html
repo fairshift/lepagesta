@@ -1,0 +1,172 @@
+<!doctype html>
+<html class="no-js" lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lepa gesta</title>
+
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/foundation/foundation-icons.css" />
+    <link rel="stylesheet" href="css/override.css" />
+    <link rel="stylesheet" href="css/app.css" />
+
+    <script src="js/vendor/jquery/external/jquery/jquery.js"></script>
+	<script src="js/vendor/jquery/jquery.cookie.js"></script>
+
+    <script src="js/vendor/bootstrap.js"></script>
+
+    <!--Form enhancement scripts-->
+	<script src="js/vendor/jquery/jquery.validate.min.js"></script>
+    <script src="js/vendor/bootstrap-switch.min.js"></script>
+
+    <script src="js/vendor/hasher.min.js"></script>
+    <script src="js/vendor/crossroads.min.js"></script>
+	<!--http://stackoverflow.com/questions/8137672/mustache-js-and-singular-plural--> 
+    <script src="js/vendor/handlebars/handlebars-v4.0.5.js"></script>
+    <script src="js/vendor/mustache.js"></script>
+
+    <script type="text/javascript" src="js/vendor/ydn.db-is-core-qry.js"></script> 
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
+
+    <script type="text/javascript">
+
+//Site content
+    var siteTexts = [];
+    
+    siteTexts['landing_title'] = "Capture sustainable gestures at #GSusJam 2016";
+
+    siteTexts['landing_l_title'] = "Tag sustainable gestures on spot";
+    siteTexts['landing_l_description'] = "During the jam, notice gestures that change the world in ways you would like to see more of.";
+    siteTexts['landing_l_tip'] = "Use a special expression to make it memorable for yourself and others.";
+
+    siteTexts['landing_m_title'] = "Entangle gestures and edit later";
+    siteTexts['landing_m_description'] = "Quickly entangle a gesture with a value tag to connect with likeminded peers around the globe.";
+    siteTexts['landing_m_tip'] = "Gestures can give an early example of what you are really working on at the jam.";
+
+    siteTexts['landing_r_title'] = "Reflect on gestures";
+    siteTexts['landing_r_description'] = "Take a few minutes to reflect on those special moments.";
+    siteTexts['landing_r_tip'] = "Invite people who were part of the experience to reflect together.";
+
+    siteTexts['landing_enter'] = 'Hack the matrix';
+
+    siteTexts['location_undetected'] = "Your browser didn't communicate your location. Please enable sharing of location with this website.";
+    siteTexts['location_appeal_manually'] = "Type in your address";
+    siteTexts['location_form_current_address'] = "Please type in your current address.";
+    siteTexts['location_form_confirm'] = "That's the place";
+
+    siteTexts['gesture_dna'] = "Reflect and entangle in good will gesture DNA";
+    siteTexts['gesture_form_appeal'] = "Have you experienced or done a sustainable gesture during the jam?";
+    siteTexts['gesture_form_tag_values'] = "Tag embodied value(s) leading to sustainable future.";
+    siteTexts['gesture_form_tag_values_input'] = "Type in comma-separated values";
+    siteTexts['gesture_form_circle'] = "Who's in the circle? Give others a chance to reflect";
+    siteTexts['gesture_form_tag_people'] = "Tag people by email";
+    siteTexts['gesture_form_tag_people_input'] = "Type in comma-separated email(s) #nospam (< 256)";
+
+    siteTexts['gesture_form_continue'] = "Add more details";
+
+    siteTexts['gesture_form_entangle'] = "Entangle now";
+
+    siteTexts['refresh'] = "Refresh";
+    siteTexts['cancel'] = "Cancel";
+    siteTexts['show_on_map'] = "Show on map";
+
+    var siteMedia = [];
+    siteMedia['gesture_image'] = "imgs/gesture.png";
+
+   	</script>
+</head>
+<body>
+    <canvas id="c" style="display: none; position: absolute; z-index: 4; background: #000;"></canvas>
+    <div id="header">
+
+    </div>
+
+    <div class="container">
+        <div class="row" style="position: relative;">
+          <div class="col-md-2 col-sm-1 hidden-xs" style="height: 1px">&nbsp;</div>
+
+          <div id="flow" class="col-md-8 col-sm-10 col-xs-12">
+
+          </div>
+
+          <div class="col-md-2 col-sm-1 hidden-xs" style="height: 1px">&nbsp;</div>
+        </div>
+    </div>
+
+    <!--Backgrounds-->
+    <div id="bbg" class="invisible"></div>
+    <div id="bg" class="invisible"></div>
+
+    <!--Map and location controls-->
+    <div id="map"></div>
+
+    <script src="js/vendor/routes.js"></script>
+    <script src="js/vendor/dataworker.js"></script>
+    <script src="js/vendor/datalink.js"></script>
+    <script src="js/vendor/helper.js"></script>
+	<script type="text/javascript">
+
+//Site config
+    var api = "http://lepagesta.org/api/main.php";
+    var domain = window.location.hostname;
+    var site_id = 0;
+    var attach = attachToCalls('o='+domain); //transforms into s={site_id} after first call
+
+//User perspective
+    var language = 'en'; //site language and default language of data
+    attach = attachToCalls('l='+language);
+
+    var auth = 0;
+	var user;
+	var cookies = 0;
+   	var user_lat = 0;
+    var user_lng = 0;
+    var location_live = false;
+    var location_detected = false;
+    var location_fail = false;
+    var map_follow_user = true;
+
+    var map_bound_n = 0;
+	var map_bound_e = 0;
+	var map_bound_s = 0;
+	var map_bound_w = 0;
+
+//More texts
+	siteTexts['enter_title'] = 'Sign in or register with your email.';
+	siteTexts['enter_title_register'] = 'Register %email%.';
+	siteTexts['enter_title_confirm'] = 'A confirmation email is waiting on %email%.';
+	siteTexts['enter_title_signin'] = 'Sign into %email% with your password.';
+	siteTexts['enter_register_display_heading'] = 'Select your display name.';
+	siteTexts['enter_register_password_heading'] = 'Choose your password.';
+	siteTexts['enter_continue'] = 'Continue';
+	siteTexts['enter_email_input'] = 'Please enter your email.';
+	siteTexts['enter_register_username_input'] = 'Please enter your real name, or a nickname.';
+	siteTexts['enter_continue_register'] = 'Register';
+	siteTexts['enter_continue_signin'] = 'Sign in';
+	siteTexts['enter_continue_confirm'] = 'Confirm';
+	siteTexts['enter_register_password_input'] = 'Please enter your password.';
+	siteTexts['enter_register_confirm_input'] = 'Please confirm your password.';
+	siteTexts['email_input_invalid'] = 'Form of email is invalid.';
+	siteTexts['input_tooshort'] = 'Enter at least {0} characters.';
+	siteTexts['input_password_nomatch'] = 'Passwords do not match.';
+	siteTexts['enter_register_username_available'] = '%username% is available.';
+	siteTexts['enter_register_username_taken'] = '%username% is taken by someone else.';
+	siteTexts['input_tooshort_n'] = 'Enter at least %n% characters.';
+	siteTexts['confirm_send_again'] = 'Send it again';
+	siteTexts['password_incorrect'] = 'Password does not match our records. <a id="resend">Recover lost password</a>';
+	siteTexts['menu_share'] = 'ADD GESTURE';
+	siteTexts['enter_social_login'] = 'Or login with...';
+	siteTexts['menu_profile'] = 'MY PROFILE';
+	siteTexts['header_search'] = 'Search...';
+	siteTexts['menu_help_translate'] = 'HELP TRANSLATE';
+	siteTexts['menu_info'] = 'INFO';
+	siteTexts['profile_title'] = 'Tell us more about yourself.';
+	siteTexts['profile_organization_question'] = 'Do you work with an organization / a collective?';
+
+	</script>
+    <script src="js/vendor/client.js"></script>
+
+</body>
+</html>

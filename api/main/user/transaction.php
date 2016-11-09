@@ -10,6 +10,11 @@
 
         $input = func_get_args()[0];
 
+        //When API call is logged
+        if($input['api_call']){
+        	$GLOBALS['api_call'] = http_build_query($input['api_call']);
+        }
+
         //When function starts
         if($input['function']){
         	$keys['function'] = $input['function'];
@@ -70,7 +75,7 @@
   	//This is a relational database, where state changes are gathered in content_state table, and transactions logged in block table
 		//To-do: merkletree implementation for data validation - script is in merkletree.php
   		//Idea for implementation: automatic post to a Facebook page with block_id and hash at random time as an independent partial blockchain storage
-    function toBlockchain(){
+    function storeTransaction(){
     	$db = $GLOBALS['db'];
     	$block['user_id'] = $GLOBALS['user']['id'];
     	$block['entity_id'] = $GLOBALS['entity']['id'];
@@ -143,7 +148,9 @@
 	   		$block['transactions'] = addslashes(json_encode($block['transactions']));
 			$hash = md5(json_encode($block)); //!!! merkletree
 
-			$sql = "INSERT INTO blockchain (created_by_user_id, created_by_entity_id, time_created, transactions, transactions_duration, statechanged, hash) VALUES (".
+			$sql = "INSERT INTO user_transaction (api_call, site_id, created_by_user_id, created_by_entity_id, time_created, transactions, transactions_duration, statechanged, hash) VALUES (".
+	      							"'{$GLOBALS['api_call']}', ".
+	      							"'{$GLOBALS['site']['entry_id']}', ".
 	      							"'{$block['user_id']}', ".
 	      							"'{$block['entity_id']}', ".
 	      							time().', '.

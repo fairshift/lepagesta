@@ -1,30 +1,8 @@
 <?php
-//Todo:
-/*
-$GLOBALS['nodes_memory'] array
-$GLOBALS['nodes_cache'] array
-        onReady
-            &call=nodes/blankslate (GET)
-                - frontend requests to purge any nodes related to current session's auth key
-
-        During flow
-            &call=nodes/enstate (POST list of nodes)
-                - frontend requests to purge any nodes related to current session's auth key, except for submitted list of nodes
-
-            get (&call=object or &call=object/function & params) (GET, or POST list of nodes) 
-                - frontend requests data and submits list of nodes it has cached
-
-            post (&call=object or &call=object/function & params) (POST form data) 
-                -
-
-            &call=nodes/sync (&sync=object or &sync=object/function & params) (POST list of nodes) 
-                - frontend synchronized with backend for any changes to observed data at a regular interval (default or subscription specific) or with any calls
-
-            &call=nodes/drop (&drop=object or &drop=object/function & params) (POST list of nodes)
-                - frontend notifies backend which data nodes it dropped from cache*/
-
 /*
 * This centralized database is a metaphor for it's decentralized counterparts. It could be a beginning of a beautiful transformation...
+
+Good news... Ceptr.org
 */
 
   header('Access-Control-Allow-Origin: *'); //Cross-origin enabler, a bridge of data to a multiverse of online services, onwards into the world of the living
@@ -33,7 +11,7 @@ $GLOBALS['nodes_cache'] array
 
 /*
   With blockchain, any changes to data states are stored in the distributed database
-  This API aims to emulate some core features a decentralized network of nodes running blockchain 
+  This API aims to emulate some core features a decentralized network of nodes running blockchain's integral data validity protocol - validating state changes with merkle tree
 
     * creating a data pool accessible accross many services the user chooses to share it with (this database isn't distributed, though)
     * maintaining proof for validity of data
@@ -46,7 +24,7 @@ $GLOBALS['nodes_cache'] array
     * a process of collecting, storing and processing data that enjoys trust at both both ends, social and technological
     * trust in validity of data is based on a mathematical proof that is socially accepted (merkletree)
     * on the social end trust is enabled by a critical mass of ethical peers, beholding personal traits such as [{"value": {"honesty", "integrity", "responsibility"...}}]
-    * based on a need from which changes sprout, adoption of a process is social proof of it's validity
+    * based on a need from which changes sprout, adoption of a process is social proof of trust
 
   As such, this API aims to spark imagination, supporting transition of collective memories from conscious experiences into data blocks
 */
@@ -64,7 +42,7 @@ $GLOBALS['nodes_cache'] array
     * Interactions with this API are logged, tracking changes to data states, enabling data validation, access control and measuring script efficiency
     * Such pattern can be imagined to facilitate validation of encrypted data (requires use of private-public key pairs by users) - eg.: http://enigma.media.mit.edu/
 */
-  $transaction = transaction(array('api_call' => $_GET));
+  $transaction = transaction(array('function' => 'main.php', 'route' => $_REQUEST));
 
   //Load languages
   //$GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query
@@ -73,7 +51,7 @@ $GLOBALS['nodes_cache'] array
   //$GLOBALS['node_languages'] = arrayAddDistinct($, $GLOBALS['node_languages']); //user's spoken languages
   $response['languages'] = getLanguageList(array('route' => array('languages' => $GLOBALS['node_languages'])));
 
-//Social media based authentication - !!! multi-site implementation requests a known site url to redirect back to
+//Social media based authentication
   //Facebook login
     if(!empty($_GET['code']) && !empty($_GET['response']) 
       && !empty($_SESSION['social_login_user_id'])){
@@ -84,17 +62,19 @@ $GLOBALS['nodes_cache'] array
       && !empty($_SESSION['social_login_user_id'])){
       loginTwitter();
     }
-//User authentication & necessary basic data
-  $GLOBALS['user'] = authenticate(array('route' => array( 'auth' => input( 'auth', 'md5', 32, 32 ), 'dataset' => array('user_language') )));
+//User authentication & basic necessary data
+  $GLOBALS['profile'] = authenticate(array('route' => array( 'auth' => input( 'auth', 'md5', 32, 32 ), 'dataset' => array('user_language') )));
 
-//Site-specific functions - apply domain / site_id, as passed from frontend
+//Site-specific functions - validate domain / site_id, passed from frontend
   $GLOBALS['site'] = getSite(array('route' => array( 'domain' => input('o', 'string', 1, 64), //passed when user first loads a site
                                                      'site_id' => input('s', 'integer', 1, 11)) )); //passed on all next loads site_id
 
 //Is user acting on behalf of an entity? ˇ requires permission_represent, permission_manage within a circle
   //$GLOBALS['entity'] = getEntity(array('entity_id' => input('entity_id', 'integer', 1, 11)));
 
-//With Ethereum's blockchain, user accounts are hashes that already exist
+/* 
+  with Ethereum's blockchain, user accounts are hashes that already exist
+*/
 
 //Call to API 
   if(strpos($_REQUEST['call'], '/') > 0){
@@ -105,7 +85,10 @@ $GLOBALS['nodes_cache'] array
     $GLOBALS['o'] = $_REQUEST['call']; //object
   }
 
-  $response[$_REQUEST['call']] = router($GLOBALS['o'], $GLOBALS['f']); //route call: object/function <-- $_REQUEST query fields
+  $response = router(); //route call: object/function   <---   data intake
+
+  $response['profile'] = $GLOBALS['profile'];
+  $response['site'] = $GLOBALS['site'];
 
 //JSON response
   $response['nodes'] = $GLOBALS['nodes']; //TO-DO don't send out what has already been sent ($GLOBALS['sent-nodes'] array)
@@ -128,5 +111,5 @@ $GLOBALS['nodes_cache'] array
 
 //Save transactions
   transaction(array('transaction' => $transaction)); //close 'main.php'
-  storeTransactions();
+  toBlockchain();
 ?>

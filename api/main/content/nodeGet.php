@@ -33,7 +33,7 @@
 		$GLOBALS['nodes'][$table][$id]['line'][$line_id]['state'][$language_id][$field]['content'] = $state_row_by_field; //latest content state
 
 		TO-DO
-		$GLOBALS['nodes'][$table][$id]['line'][$line_id]['state'][$language_id][$field]['trail'][$time_state_pointer]['content'] = $state_row_by_field //past states
+		$GLOBALS['nodes'][$table][$id]['line'][$line_id]['state'][$language_id][$field]['trail'][$pointer_state_time]['content'] = $state_row_by_field //past states
 
 	* Node_id alias table
 
@@ -53,7 +53,7 @@
     	$route = $input['route']; 				//node_id || table & id || where - necessary
     											//language_id (number or array) - necessary
 												//line_id - optional (or main_line_id)
-    											//time_state_pointer - optional
+    											//pointer_time_state - optional
 												//history - optional - (default: up to 12 state changes)
 
         //Related lines may be connecting various nodes - so we set limit to cross-node calls
@@ -484,10 +484,10 @@
 					$query[$line_id] = $row_line;
 
 				} elseif($line_id == $row_line['root_line_id']){ //Cascading - a line is rooted in current line
-					$query[$line_id]['root'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id']);
+					$query[$line_id]['root'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id'], 'pointer_time_state' => $row_line['pointer_time_state']);
 
 				} elseif($line_id == $row_line['tie_line_id']){ //Cascading - a line is tied to current line
-					$query[$line_id]['tie'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id']);
+					$query[$line_id]['tie'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id'], 'pointer_time_state' => $row_line['pointer_time_state']);
 				}
 			}
 
@@ -542,27 +542,27 @@
     	return $query;
     }
 
-    function relatedToLine($line_row, $row){
+    function relatedToLine($line_row){
 
 		$transaction = transaction(array('function' => __FUNCTION__));
 
 		if($line_row['root_node_id']){ //line rooted to
-			$nodes[] = array( 'node_id' => $line_row['root_node_id'], 'line_id' => $line_row['root_line_id'] );
+			$nodes[] = array( 'node_id' => $line_row['root_node_id'], 'line_id' => $line_row['root_line_id'], 'pointer_time_state' => $line_row['root_pointer_time_state'] );
 		}
 
 		if($line_row['tie_node_id']){ //line tied to
-			$nodes[] = array( 'node_id' => $line_row['tie_node_id'], 'line_id' => $line_row['tie_line_id'] );
+			$nodes[] = array( 'node_id' => $line_row['tie_node_id'], 'line_id' => $line_row['tie_line_id'], 'pointer_time_state' => $line_row['tie_pointer_time_state'] );
 		}
 
 		foreach($line_row['rooted'] AS $rooted){ //lines rooted in current line
-			$nodes[] = array( 'node_id' => $rooted['node_id'], 'line_id' => $rooted['line_id'] );
+			$nodes[] = array( 'node_id' => $rooted['node_id'], 'line_id' => $rooted['line_id'], 'pointer_time_state' => $rooted['root_pointer_time_state'] );
 		}
 
 		foreach($line_row['tied'] AS $tied){ //lines tied to current line
-			$nodes[] = array( 'node_id' => $tied['node_id'], 'line_id' => $tied['line_id'] );
+			$nodes[] = array( 'node_id' => $tied['node_id'], 'line_id' => $tied['line_id'], 'pointer_time_state' => $tied['tied_pointer_time_state'] );
 		}
 
-		if( count($routes) > 0 ){
+		if( count($nodes) > 0 ){
 			$related_nodes = array();
 			foreach( $nodes AS $node ){
 
@@ -614,6 +614,7 @@
 
 	    				$sql_where['field'] = "field = '{$field}'";
 
+	    				if($route['pointer_time_state'])
 					 	$sql = 	'SELECT * FROM node_state WHERE '.implode(' AND ', $sql_where).' ORDER BY current DESC, id DESC LIMIT 1';
 
 						$result = mysqli_query($db, $sql);
@@ -765,14 +766,14 @@
 	            }
 		    } else {
 
-	          	$sql = "INSERT INTO node_cache (time_created, time_updated, node_id, line_id, language_id, horizon, response, nodes, relations, time_unsynchronized) VALUES (".
+	          	$sql = "INSERT INTO node_cache (time_created, time_updated, node_id, line_id, pointer_state_time, language_id, horizon, response, nodes, relations, time_unsynchronized) VALUES (".
 			          							"'{$timestamp}', ".
 			          							"'{$timestamp}', ".
 			          							"'{$route['node_id']}', ".
 			          							"'{$route['line_id']}', ".
+			          							"'{$route['pointer_state_time']}, ".
 			          							"'{$route['language_id']}', ".
 			          							"'{$horizon}', ".
-
 			          							"'{$response}', ".
 			          							"'{$nodes}', ".
 			          							"'{$relations}', ".

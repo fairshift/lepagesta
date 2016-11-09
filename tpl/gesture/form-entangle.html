@@ -1,0 +1,82 @@
+            <a id="showMap" onClick="showMap();" class="btn showMap t-able t-show_on_map" style="display: none">{{show_on_map}}</a>
+
+            <div id="entangle" style="width: 100%; display: none">
+              <h4 class="header-title">{{gesture_dna}}</h4>
+              <span class="t-able t-gesture_form_appeal">{{gesture_form_appeal}}</span>
+              <br/><br/>
+              <form id="form_entangle">
+                <div class="form-group">
+	                <div class="row">
+	                  <div class="col-md-12">
+	                    <div id="form_entangle_why">
+	                      <div class="label_ie t-able t-gesture_form_tag_emails">{{gesture_form_tag_values}}</div>
+	                      <label>
+	                        <textarea id="form_entangle_values" name="values" placeholder="{{gesture_form_tag_values_input}}" maxlength="256" rows="1" class="t-able t-gesture_form_tag_values"></textarea>
+	                      </label>
+	                    </div>
+	                  </div>
+	                </div>
+	                <div class="row">
+	                  <div class="col-md-12">
+	                    <div id="form_entangle_tag">
+	                      <div style="float: left; margin-top: 4px" class="t-able t-gesture_form_circle">{{gesture_form_circle}}</div> <a class="btn" onClick="tagEmail();" style="float: right">{{gesture_form_tag_people}}</a>
+	                    </div>
+	                    <div id="form_entangle_who" style="display: none">
+	                      <div class="label_ie t-able t-gesture_form_tag_emails">{{gesture_form_tag_emails}}</div>
+	                      <label>
+	                        <textarea id="form_entangle_appreciate" name="users" placeholder="{{gesture_form_tag_emails}}" maxlength="256" rows="3" class="t-able t-gesture_form_tag_emails"></textarea>
+	                      </label>
+	                    </div>
+	                  </div>
+	                </div>
+	                <div class="row">
+	                  <div class="col-md-12" style="text-align: left">
+	                    <div class="switch">
+	                      <input id="fb_status" type="checkbox" name="fb_status">
+	                      <label id="form_entangle_fb_switch" for="fb_status"></label>
+	                      <div style="position: relative; top: -34px; left: 85px; margin-right: 85px"><span id="nekineki"></span>Bring the noise - share on FB</div>
+	                    </div>
+	                  </div>
+	                </div>
+	                <div class="row">
+	                  <div class="col-sm-6 col-xs-12">
+            			<a onClick="scrollTo('form_continue_1');" class="btn">
+            				<span class="badge">V</span>
+            				<span class="t-able t-gesture_form_continue">{{gesture_form_continue}}</span>
+            			</a>
+	                  </div>
+	                  <div class="col-sm-6 col-xs-12">
+            			<a onClick="formSubmit();" class="btn t-able t-gesture_form_entangle">
+            				{{gesture_form_entangle}}
+            			</a>
+	                  </div>
+	                </div>
+	                <div class="row" id="form_continue_1">
+	                  <div class="col-md-12">
+	                    <div class="label_ie">Describe the gesture (140)</div>
+	                    <label>
+	                      <textarea id="form_entangle_gesture" name="gesture" placeholder="Describe the gesture (< 140)" maxlength="140" rows="2" onKeyPress="preparePostFB()"></textarea>
+	                    </label>
+	                  </div>
+	                </div>
+	                <div class="row">
+	                  <div class="col-md-12" style="text-align: left">
+	                    <div id="fb_div" style="display: none;">
+	                      <textarea id="fb_message" name="fb_message" cols="70" rows="7"></textarea>
+	                    </div>
+	                  </div>
+	                </div>
+	                <div class="row">
+	                  <div class="col-md-8 col-sm-6 col-xs-12">
+	                    <a onClick="appreciateGesture()" class="btn" style="width: 100%">Appreciate</a>
+	                  </div>
+	                  <div class="col-md-4 col-sm-6 col-xs-12">
+	                    <a onClick="closeGesture()" class="btn" style="width: 100%">Close</a>
+	                  </div>
+	                </div>
+                </div>
+                <input type="hidden" id="form_entangle_id" name="gesture_id"/>
+                <input type="hidden" name="lat" id="form_entangle_lat"/>
+                <input type="hidden" name="lng" id="form_entangle_lng"/>
+              </form>
+            </div>
