@@ -4,7 +4,7 @@
   function authenticate(){
 
     $db = $GLOBALS['db'];
-    $route['auth'] = input('auth', 'string', 32, 32);
+    $route['auth'] = input($GLOBALS['call_inprocess'], 'auth', 'string', 32, 32);
     $transaction = transaction(array('function' => __FUNCTION__, 'route' => $route));
 
     $newUser = false; //in case authentication code doesn't match, this triggers a new anonymous account (auth cookie validation)
@@ -28,7 +28,7 @@
 
     if(!$route['auth'] || $newUser == true){
 
-      $auth = md5("LOL%I=ISUP".microtime());
+      $auth = newKey();
 
       mysqli_begin_transaction($db, MYSQLI_TRANS_START_READ_WRITE);
       mysqli_query($db, 'INSERT INTO user (auth, auth_time, time_visited) VALUES ('.
@@ -37,7 +37,7 @@
                   "'".time()."'" );
       mysqli_commit($db);
 
-      $user['auth'] = $route['auth'];
+      $user['auth'] = $auth;
     }
 
     transaction(array('transaction' => $transaction, 'statechanged' => $statechanged));
@@ -62,7 +62,7 @@
     }
 
     if($user['id'] > 0){
-      $response['user'] = $user;
+      $response = $user;
       $response['status'] = 'welcome';
     } else {
       $response['status'] = emailStatus(array('route' => $route));
@@ -138,7 +138,7 @@
       && !getUser(array('route' => array('display_name' => $route['display_name'])))
     ){
 
-      $email_confirmation_code = md5("LOL%I=ISUP".microtime());
+      $email_confirmation_code = newKey();
     
       $sql = "INSERT INTO user (display_name, password, email, time_created, email_confirmation_code, time_email_confirmed, time_visited) VALUES (".
                   "'".$route['display_name']."', ".
@@ -197,7 +197,7 @@
 
     if($user['email_confirmation_code'] > 0 && $user['time_email_confirmed'] == 0){
       mailer($user['email'], array('email_confirmation_code' => $user['email_confirmation_code'], 'display_name' => $user['display_name']), 'confirmation');
-      $response = true;
+      $response = 'sent';
     }
 
     transaction(array('transaction' => $transaction));

@@ -64,48 +64,32 @@ $GLOBALS['nodes_cache'] array
     * Interactions with this API are logged, tracking changes to data states, enabling data validation, access control and measuring script efficiency
     * Such pattern can be imagined to facilitate validation of encrypted data (requires use of private-public key pairs by users) - eg.: http://enigma.media.mit.edu/
 */
-  $transaction = transaction(array('api_call' => $_GET));
+  $transaction = transaction(array('api_call' => $_GET['calls']));
 
-  //Load languages
+//Load languages
   //$GLOBALS['language_id'] = (input('lang', 'string', 1, 10)) ? $GLOBALS['languages'][input('lang', 'string', 1, 10)]['id'] : exit; //language of current query
   $GLOBALS['default_language_id'] = 20; //default language is English
   $GLOBALS['node_languages'][] = $GLOBALS['default_language_id'];
   //$GLOBALS['node_languages'] = arrayAddDistinct($, $GLOBALS['node_languages']); //user's spoken languages
   $response['languages'] = getLanguageList(array('route' => array('languages' => $GLOBALS['node_languages'])));
 
-//Social media based authentication - !!! multi-site implementation requests a known site url to redirect back to
-  //Facebook login
-    if(!empty($_GET['code']) && !empty($_GET['response']) 
-      && !empty($_SESSION['social_login_user_id'])){
-        loginFacebook();
+//Process call(s) to API - multiple possible
+  $calls = explode($_GET['calls'][',']);
+
+  $priorities[] = 'user/auth';
+  $priorities[] = 'user/languages';
+  $priorities[] = 'site/domain'; //when user first loads a site
+  $priorities[] = 'site/id'; //on all next loads site_id
+  foreach($priorities AS $call){
+    if(in_array($call, $calls)){
+      $response[$call] = router($call);
+      unset($calls[$call]);
     }
-  //Twitter login
-    if(!empty($_GET['oauth_verifier']) && !empty($_SESSION['oauth_token']) && !empty($_SESSION['oauth_token_secret'])
-      && !empty($_SESSION['social_login_user_id'])){
-      loginTwitter();
-    }
-//User authentication & necessary basic data
-  $GLOBALS['user'] = authenticate(array('route' => array( 'auth' => input( 'auth', 'md5', 32, 32 ), 'dataset' => array('user_language') )));
-
-//Site-specific functions - apply domain / site_id, as passed from frontend
-  $GLOBALS['site'] = getSite(array('route' => array( 'domain' => input('o', 'string', 1, 64), //passed when user first loads a site
-                                                     'site_id' => input('s', 'integer', 1, 11)) )); //passed on all next loads site_id
-
-//Is user acting on behalf of an entity? ˇ requires permission_represent, permission_manage within a circle
-  //$GLOBALS['entity'] = getEntity(array('entity_id' => input('entity_id', 'integer', 1, 11)));
-
-//With Ethereum's blockchain, user accounts are hashes that already exist
-
-//Call to API 
-  if(strpos($_REQUEST['call'], '/') > 0){
-    $buffer = explode('/', $_REQUEST['call']);
-    $GLOBALS['o'] = $buffer[0]; //object
-    $GLOBALS['f'] = $buffer[1]; //function
-  } else {
-    $GLOBALS['o'] = $_REQUEST['call']; //object
   }
 
-  $response[$_REQUEST['call']] = router($GLOBALS['o'], $GLOBALS['f']); //route call: object/function <-- $_REQUEST query fields
+  foreach($calls AS $call){
+    $response[$call] = router($call); //route call: object/function <-- $_REQUEST[$call] stores input parameters
+  }
 
 //JSON response
   $response['nodes'] = $GLOBALS['nodes']; //TO-DO don't send out what has already been sent ($GLOBALS['sent-nodes'] array)

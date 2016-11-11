@@ -1,105 +1,109 @@
 self.addEventListener('message', function(e) {
-  var data = e.data;
-  if(data['function'].length){
-    var fnc = data['function'];
-    delete data['function'];
+  var args = e.args;
+  if(args['function'].length){
+    var fnc = args['function'];
+    delete args['function'];
 
-    if(typeof self['db'] === 'undefined'){
-        self['db'] = initLocalDB();
+    if(typeof self['storage'] === 'undefined'){
         self['getLocalData'] = getLocalData();
         self['putLocalData'] = putLocalData();
+        self['clearLocalStorage'] = clearLocalStorage();
     }
 
     if(fnc = 'initLocalDB'){
-        self['db'] = self[fnc].apply(null, data);
+        self['storage'] = self[fnc].apply(null, args);
     } else {
-        self[fnc].apply(null, data);
+        self[fnc].apply(null, args);
     }
   }
 }, false);
 
 function initLocalDB(args){
-    var db = {};
-    db['inmemory'] = false;
-    db['persistent'] = false;
+    var storage = {};
 
-    if(args['schemas']['inMemory'].length && args.schemas.persistent.length){
-        db['inmemory'] = new ydn.db.Storage('inmemory', args.schemas.inMemory);
-        db['persistent'] = new ydn.db.Storage('persistent', args.schemas.persistent);
+    if(args['schema'].length){
+        storage = new ydn.db.Storage('db-local', args.schemas.inMemory);
     }
-    return db;
+    return storage;
 }
 
 function getLocalData(args){
-    if(args.params.length){
-        var call = $.param(params);
-        var part = args.part;
-        var reactive = args.reactive;
-        var cacheLevel = args.cacheLevel;
 
-        if(!!window.Worker){
-            var storage = self.db;
-        }
-
-        var response = [];
-
-        //Query local inmemory storage first
-        var storageType = 'persistent';
-        var query = storage['inmemory'].from('call').where('id', '=', call).order('time_synchronized', true); //order desc
-
-        //Query local db storage second
-        if(!query){
-            console.log("getLocalData(): !query");
-            var query = storage['persistent'].from('call').where('id', '=', call).order('part', true); //order desc
-            storageType = 'persistent';
-        }
-
-        var data = [];
-        var cursor;
-        if(query.length){
-            $.each(query, function(item){
-                data = $.parseJSON(item.response);
-                if(data['node_id']){
-                    cursor = data['node_id'];
-                } else {
-                    cursor = data['table']+"."+data['entry_id'];
-                }
-                storage[storageType].from('node').where(cursor).done(function(node){
-                    //stored data is older than sync_interval
-                    //nodes or parts of nodes are missing
-                    $.parseJSON(node);
-                 });
-            });
-        });
-            response['status_code'].push('localdb_'+storageType);
-            response['status_code'].push('localdb_success');
-        } else {
-            response['status_code'].push('localdb_nodata');
-        }
-        }
-    }
-}
-
-function putLocalData(){
-    var call = $.param(params);
-    var part = arguments['part'];
-    var reactive = arguments['reactive'];
-    var cacheLevel = arguments['cacheLevel'];
     if(!!window.Worker){
         var storage = self.db;
     }
-    /*var data = {
-        "text":todo.value,
-        "timeStamp":new Date().getTime()
-    };
-    db.put('call', data).fail(function(e) {
-        console.error(e);
-    });
-    db.put('node', data).fail(function(e) {
-        console.error(e);
-    });*/
+
+    var store = args.collection;
+    if(store){
+        var field = typeof args.field !== 'undefined' ? args.field : null;
+        var where = typeof args.where !== 'undefined' ? where : null;
+        //var orderBy - secondary index "call" selected
+        var desc = typeof args.desc !== 'undefined' ? args.desc : false;
+
+        var query,
+            response = [],
+            count;
+
+        if(where && field){
+            count = storage.count(store, field);
+        } else {
+            count = storage.count(store);
+        }
+
+        if(args.count){
+            return count;
+        } else {
+            for(i = 0; i < ceil(count / 100); i++){
+                if(where){
+                    query = storage.values(new ydn.db.IndexValueIterator(store, field, where, 100, i * 100));
+                } else {
+                    query = storage.values(new ydn.db.IndexValueIterator(store, field, null, 100, i * 100);
+                }
+                response = $.merge(response, query.done(function(records) {
+                    return records;
+                  }, function(e) {
+                    console.error(e);
+                    return array('status_code' => ['localdb_error' => e]);
+                });
+            }
+        }
+        
+        response['count'] = count;
+        response['status_code'].push(array('localdb_get_success'));
+        /* Other form of response
+        response = storage.from('list').where('id', '=', call).order('part', desc).done(function(results){
+            return results;
+        });*/
+    }
 }
 
-if(!!window.Worker){
-    self['initLocalDB'] = initLocalDB;
+function putLocalData(table, data){
+
+    if(!!window.Worker){
+        var storage = self.storage;
+    }
+    storage.put(table, data).fail(function(e) {
+        console.error(e);
+        return array('status_code' => ['localdb_error' => e]);
+    });
+    return array('status_code' => ['localdb_put_success' => e]);
+}
+
+function removeLocalData(args){
+
+    if(!!window.Worker){
+        var storage = self.storage;
+    }
+
+    var store = args.collection;
+    var field = typeof args.field !== 'undefined' ? args.field : null;
+    var where = typeof args.where !== 'undefined' ? args.where : null;
+    if(store && field && where){
+        storage.remove(store, field, where).done(function(){
+            return array('status_code' => array('localdb_removed_success')]);
+        }, function(e) {
+            console.error(e);
+            return array('status_code' => array('localdb_error' => e));
+        });
+    }
 }

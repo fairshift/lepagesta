@@ -75,7 +75,11 @@
         $user['passwordMatch'] = false;
       }
     }
-    $user['password'] = null;
+    unset($user['password']);
+
+    if(!$route['auth'] || $user_id != $user['id']){
+      unset($user['auth']);
+    }
 
     return $user;
   }

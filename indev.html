@@ -24,8 +24,8 @@
     <script src="js/vendor/hasher.min.js"></script>
     <script src="js/vendor/crossroads.min.js"></script>
 	<!--http://stackoverflow.com/questions/8137672/mustache-js-and-singular-plural--> 
-    <script src="js/vendor/handlebars/handlebars-v4.0.5.js"></script>
     <script src="js/vendor/mustache.js"></script>
+    <script src="js/vendor/handlebars/handlebars-v4.0.5.js"></script>
 
     <script type="text/javascript" src="js/vendor/ydn.db-is-core-qry.js"></script> 
     <script src="https://maps.googleapis.com/maps/api/js"></script>
@@ -108,30 +108,36 @@
     <script src="js/vendor/helper.js"></script>
 	<script type="text/javascript">
 
-//Site config
-    var api = "http://lepagesta.org/api/main.php";
-    var domain = window.location.hostname;
-    var site_id = 0;
-    var attach = attachToCalls('o='+domain); //transforms into s={site_id} after first call
-
 //User perspective
-    var language = 'en'; //site language and default language of data
-    attach = attachToCalls('l='+language);
+    var language = 'en', //site language and default language of data
+        user_languages = []; //user's spoken languages - preference as order
 
-    var auth = 0;
-	var user;
-	var cookies = 0;
-   	var user_lat = 0;
-    var user_lng = 0;
-    var location_live = false;
-    var location_detected = false;
-    var location_fail = false;
-    var map_follow_user = true;
+    var auth = 0,
+	    user,
+	    cookies = 0,
+   	    user_lat = 0,
+        user_lng = 0,
+        location_live = false,
+        location_detected = false,
+        location_fail = false,
+        map_follow_user = true;
 
-    var map_bound_n = 0;
-	var map_bound_e = 0;
-	var map_bound_s = 0;
-	var map_bound_w = 0;
+    var map_bound_n = 0,
+	    map_bound_e = 0,
+	    map_bound_s = 0,
+	    map_bound_w = 0;
+
+//API config
+    var api = "http://lepagesta.org/api/main.php",
+        domain = window.location.hostname, site_id, 
+        attach = attachToCalls('domain='+domain); //transforms into s={site_id} after first call
+
+    var onChangeBindings = [], //functions are notified after call is run
+        /*[{call}] = array({function} => {params json});*/,
+        bindingsSyncInterval = 20*1000, //default: 20 seconds
+        storageSyncInterval = 6*60*1000, //default: 6 minutes
+        dataClearWindow = 3*24*3600, //default: 3 days
+        synced_api_time, synced_local_time;
 
 //More texts
 	siteTexts['enter_title'] = 'Sign in or register with your email.';

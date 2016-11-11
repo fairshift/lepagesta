@@ -16,7 +16,7 @@ function safeProfileData($row){
     }
 }
 
-function newAuth($db, $auth){
+function newKey($db, $auth){
 
 	$newauth = md5("LOL%I=ISUP".microtime());
 	mysqli_query($db, "UPDATE user SET auth = '".$newauth."' WHERE auth = '$auth'");
@@ -24,11 +24,15 @@ function newAuth($db, $auth){
 	return $newauth;
 }
 
-function input( $name, $data_type, $required_length, $max_length = "" ){
+function input( $call, $name, $data_type, $required_length, $max_length = "" ){
 
-	if(isset($_REQUEST[$name])){
+	if(isset($_GET[$name]) && $call == (null || 0)){
+	  	$input = $_GET[$name];
+	} elseif(isset($_POST[$call][$name]) && $call) {
+	  	$input = $_POST[$call][$name];
+	  }
 
-	  $input = $_REQUEST[$name];
+	if($input){
 
 	  //Required minimum input length check
 	  if( strlen($input) >= $required_length ){
