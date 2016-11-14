@@ -19,18 +19,18 @@ self.addEventListener('message', function(e) {
 }, false);
 
 function initLocalDB(args){
-    var storage = {};
+    var dbObject = {};
 
     if(args['schema'].length){
-        storage = new ydn.db.Storage('db-local', args.schemas.inMemory);
+        dbObject = new ydn.db.Storage('db-local', args.schema);
     }
-    return storage;
+    return dbObject;
 }
 
 function getLocalData(args){
 
     if(!!window.Worker){
-        var storage = self.db;
+        var storage = self['storage'];
     }
 
     var store = args.collection;
@@ -39,50 +39,56 @@ function getLocalData(args){
         var where = typeof args.where !== 'undefined' ? where : null;
         //var orderBy - secondary index "call" selected
         var desc = typeof args.desc !== 'undefined' ? args.desc : false;
+        var limit = typeof args.limit !== 'undefined' ? args.limit : 1;
 
         var query,
-            response = [],
+            output = [],
             count;
 
         if(where && field){
-            count = storage.count(store, field);
+            output['count'] = storage.count(store, field);
         } else {
-            count = storage.count(store);
+            output['count'] = storage.count(store);
         }
 
-        if(args.count){
-            return count;
+        if(args.count || output['count'] == 0){
+            return output;
         } else {
-            for(i = 0; i < ceil(count / 100); i++){
+            if(count == 0){
+                return output['count']; 
+            }
+            for(i = 0; i < ceil(count / limit); i++){
                 if(where){
-                    query = storage.values(new ydn.db.IndexValueIterator(store, field, where, 100, i * 100));
+                    query = storage.values(new ydn.db.IndexValueIterator(store, field, where, limit, i * ceil(count / limit)), desc);
                 } else {
-                    query = storage.values(new ydn.db.IndexValueIterator(store, field, null, 100, i * 100);
+                    query = storage.values(new ydn.db.IndexValueIterator(store, field, null, limit, i * ceil(count / limit)), desc);
                 }
-                response = $.merge(response, query.done(function(records) {
+                output['data'][] = query.done(function(records){
                     return records;
                   }, function(e) {
                     console.error(e);
-                    return array('status_code' => ['localdb_error' => e]);
+                    return array('status_code' => array('localdb_error'));
                 });
             }
         }
         
-        response['count'] = count;
-        response['status_code'].push(array('localdb_get_success'));
-        /* Other form of response
+        if(!$.inArray('localdb_error')){
+            response['status_code'].push(array('localdb_get_success'));
+        }
+        return output;
+        /* Other forms of querying with YDN-DB
         response = storage.from('list').where('id', '=', call).order('part', desc).done(function(results){
             return results;
         });*/
     }
 }
 
-function putLocalData(table, data){
+function putLocalData(collection, data){
 
     if(!!window.Worker){
         var storage = self.storage;
     }
-    storage.put(table, data).fail(function(e) {
+    storage.put(collection, data).fail(function(e) {
         console.error(e);
         return array('status_code' => ['localdb_error' => e]);
     });

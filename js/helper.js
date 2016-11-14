@@ -38,37 +38,6 @@ function isValidEmailAddress(emailAddress) {
     return pattern.test(emailAddress);
 };
 
-var attachArray = {};
-function attachToCalls(pair){ //persistent attachment
-
-    var keyValuePair = pair.split('=');
-    attachArray[keyValuePair[0]] = encodeURIComponent(keyValuePair[1]);
-    attachArray.sort();
-    var attachment = renderAttachment(attachArray);
-
-    return attachment;
-}
-function detachFromCalls(key){ //detach
-
-    delete attachArray(key);
-    var attachment attach = renderAttachment(attachArray);
-    return attachment;
-}
-function attachToCall(pair, tempAttachArray){ //one-time attachment
-
-    var keyValuePair = pair.split('=');
-    tempAttachArray[keyValuePair[0]] = encodeURIComponent(keyValuePair[1]);
-    tempAttachArray.sort();
-    var attachment = renderAttachment(attachArray);
-
-    return attachment;
-}
-function renderAttachment(){
-
-    var attachment = $.param(attachArray);
-    return attachment;
-}
-
 function getUrlParameter(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
         sURLVariables = sPageURL.split('&'),
@@ -82,3 +51,28 @@ function getUrlParameter(sParam) {
         }
     }
 };
+
+//http://stackoverflow.com/questions/7146217/merge-2-arrays-of-objects
+function mergeLeftPrevail(arr2, arr1){
+    var arr3 = [];
+    for(var i in arr1){
+       var shared = false;
+       for (var j in arr2)
+           if (arr2[j].name == arr1[i].name) {
+               shared = true;
+               break;
+           }
+       if(!shared) arr3.push(arr1[i])
+    }
+    return arr3.concat(arr2);
+}
+/*function arrayUnique(array) {
+    for(var i=0; i<array.length; ++i) {
+        for(var j=i+1; j<array.length; ++j) {
+            if(array[i] === aray[j])
+                array.splice(j--, 1);
+        }
+    }
+
+    return a;
+};*/

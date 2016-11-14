@@ -229,6 +229,11 @@ function router($call){
     break;
   }
 
+  //Server time
+    case 'server-time':
+      $response['time'] = time();
+      break;
+
   return $response; 
 }
 ?>

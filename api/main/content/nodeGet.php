@@ -53,7 +53,7 @@
     	$route = $input['route']; 				//node_id || table & id || where - necessary
     											//language_id (number or array) - necessary
 												//line_id - optional (or main_line_id)
-    											//pointer_time_state - optional
+    											//pointer_state_time - optional
 												//history - optional - (default: up to 12 state changes)
 
         //Related lines may be connecting various nodes - so we set limit to cross-node calls
@@ -308,12 +308,17 @@
 				foreach($line[$route['line_id']]['state'] AS $language_id => $state){
 					$node['languages'] = arrayAddDistinct($language_id, $node['languages']);
 				}
+				foreach($line[$route['line_id']]['dataset'] AS $language_id => $state){
+					$node['datasets'] = arrayAddDistinct($language_id, $node['datasets']);
+				}
 
 				$query = array(	'table' => $route['table'], 
 								'id' => $route['id'],
-								'languages' => $node['languages'],
 								'node_id' => $route['node_id'],
-								'line_id' => $route['line_id'] );
+								'line_id' => $route['line_id'],
+								'pointer_state_time' => $route['pointer_state_time'],
+								'languages' => $node['languages'],
+								'datasets' => $node['datasets'] );
 
 				$GLOBALS['updateNodeCache'] = arrayAddDistinct($query, $GLOBALS['updateNodeCache']);
 
@@ -321,9 +326,10 @@
 					$node['languages'] = arrayMergeDistinct($node['languages'], $buffer_languages);
 					$query = array(	'table' => $route['table'], 
 									'id' => $route['id'],
-									'languages' => $node['languages'],
 									'node_id' => $route['node_id'],
-									'line_id' => $route['line_id'] );
+									'line_id' => $route['line_id'],
+									'languages' => $node['languages'],
+									'datasets' => $node['datasets'] );
 				}
 
 				//Load table-specific datasets - $dataset = ('*' || array('something', ...));
@@ -484,10 +490,10 @@
 					$query[$line_id] = $row_line;
 
 				} elseif($line_id == $row_line['root_line_id']){ //Cascading - a line is rooted in current line
-					$query[$line_id]['root'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id'], 'pointer_time_state' => $row_line['pointer_time_state']);
+					$query[$line_id]['root'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id'], 'pointer_state_time' => $row_line['pointer_state_time']);
 
 				} elseif($line_id == $row_line['tie_line_id']){ //Cascading - a line is tied to current line
-					$query[$line_id]['tie'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id'], 'pointer_time_state' => $row_line['pointer_time_state']);
+					$query[$line_id]['tie'][] = array('node_id' => $row_line['node_id'], 'line_id' => $row_line['id'], 'pointer_state_time' => $row_line['pointer_state_time']);
 				}
 			}
 
@@ -549,19 +555,19 @@
 		$transaction = transaction(array('function' => __FUNCTION__));
 
 		if($line_row['root_node_id']){ //line rooted to
-			$nodes[] = array( 'node_id' => $line_row['root_node_id'], 'line_id' => $line_row['root_line_id'], 'pointer_time_state' => $line_row['root_pointer_time_state'] );
+			$nodes[] = array( 'node_id' => $line_row['root_node_id'], 'line_id' => $line_row['root_line_id'], 'pointer_state_time' => $line_row['root_pointer_state_time'] );
 		}
 
 		if($line_row['tie_node_id']){ //line tied to
-			$nodes[] = array( 'node_id' => $line_row['tie_node_id'], 'line_id' => $line_row['tie_line_id'], 'pointer_time_state' => $line_row['tie_pointer_time_state'] );
+			$nodes[] = array( 'node_id' => $line_row['tie_node_id'], 'line_id' => $line_row['tie_line_id'], 'pointer_state_time' => $line_row['tie_pointer_state_time'] );
 		}
 
 		foreach($line_row['rooted'] AS $rooted){ //lines rooted in current line
-			$nodes[] = array( 'node_id' => $rooted['node_id'], 'line_id' => $rooted['line_id'], 'pointer_time_state' => $rooted['root_pointer_time_state'] );
+			$nodes[] = array( 'node_id' => $rooted['node_id'], 'line_id' => $rooted['line_id'], 'pointer_state_time' => $rooted['root_pointer_state_time'] );
 		}
 
 		foreach($line_row['tied'] AS $tied){ //lines tied to current line
-			$nodes[] = array( 'node_id' => $tied['node_id'], 'line_id' => $tied['line_id'], 'pointer_time_state' => $tied['tied_pointer_time_state'] );
+			$nodes[] = array( 'node_id' => $tied['node_id'], 'line_id' => $tied['line_id'], 'pointer_state_time' => $tied['tied_pointer_state_time'] );
 		}
 
 		if( count($nodes) > 0 ){
@@ -612,11 +618,11 @@
 				//Get current state of content for each field
 	    		foreach($input['template'] AS $field => $content){
 
-	    			if(!in_array($field, array('id', 'node_id', 'main_line_id', 'table', 'entry_id', 'created_by_user_id', 'created_by_entity_id', 'time_created', 'time_updated', 'closed_by_user_id', 'closed_by_entity_id', 'time_closed', 'removed_by_user_id', 'removed_by_entity_id', 'removed_time'))){
+	    			if(!in_array($field, array('id', 'node_id', 'main_line_id', 'table', 'entry_id', 'created_by_user_id', 'created_by_entity_id', 'time_created', 'time_updated', 'closed_by_user_id', 'closed_by_entity_id', 'time_closed', 'open_by_user_id', 'open_by_entity_id', 'time_open', 'removed_by_user_id', 'removed_by_entity_id', 'removed_time'))){
 
 	    				$sql_where['field'] = "field = '{$field}'";
 
-	    				if($route['pointer_time_state'] && $route['pointer_time_state'] != 'current'){
+	    				if($route['pointer_state_time'] && $route['pointer_state_time'] != 'current'){
 	    					$sql = 'SELECT * FROM node_state WHERE '.implode(' AND ', $sql_where).' ORDER BY current DESC, id DESC LIMIT 1';
 	    				} else {
 					 		$sql = 'SELECT * FROM node_state WHERE '.implode(' AND ', $sql_where).' ORDER BY current DESC, id DESC LIMIT 1';
@@ -667,7 +673,12 @@
 		          	$node = getUser( array('route' => array('user_id' => $id)) );
 					$nodes = arrayAddDistinct($node, $nodes);
 					//echo $id;
-		      	} //+entity
+		      	} /*!!! +entity
+				if( strpos($field, 'entity_id') ){
+		          	$node = getUser( array('route' => array('user_id' => $id)) );
+					$nodes = arrayAddDistinct($node, $nodes);
+					//echo $id;
+		      	}*/
 	    	}
 	    }
 

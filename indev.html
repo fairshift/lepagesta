@@ -33,47 +33,48 @@
     <script type="text/javascript">
 
 //Site content
-    var siteTexts = [];
+    var siteContent = [];
+
+    /*Images*/
+    siteMedia['landing_gesture'] = "imgs/gesture.png";
     
-    siteTexts['landing_title'] = "Capture sustainable gestures at #GSusJam 2016";
+    /*Texts - GSusJam*/
+    siteContent['landing_title'] = "Capture sustainable gestures at #GSusJam 2016";
 
-    siteTexts['landing_l_title'] = "Tag sustainable gestures on spot";
-    siteTexts['landing_l_description'] = "During the jam, notice gestures that change the world in ways you would like to see more of.";
-    siteTexts['landing_l_tip'] = "Use a special expression to make it memorable for yourself and others.";
+    siteContent['landing_l_title'] = "Tag sustainable gestures on spot";
+    siteContent['landing_l_description'] = "During the jam, notice gestures that change the world in ways you would like to see more of.";
+    siteContent['landing_l_tip'] = "Use a special expression to make it memorable for yourself and others.";
 
-    siteTexts['landing_m_title'] = "Entangle gestures and edit later";
-    siteTexts['landing_m_description'] = "Quickly entangle a gesture with a value tag to connect with likeminded peers around the globe.";
-    siteTexts['landing_m_tip'] = "Gestures can give an early example of what you are really working on at the jam.";
+    siteContent['landing_m_title'] = "Entangle gestures and edit later";
+    siteContent['landing_m_description'] = "Quickly entangle a gesture with a value tag to connect with likeminded peers around the globe.";
+    siteContent['landing_m_tip'] = "Gestures can give an early example of what you are really working on at the jam.";
 
-    siteTexts['landing_r_title'] = "Reflect on gestures";
-    siteTexts['landing_r_description'] = "Take a few minutes to reflect on those special moments.";
-    siteTexts['landing_r_tip'] = "Invite people who were part of the experience to reflect together.";
+    siteContent['landing_r_title'] = "Reflect on gestures";
+    siteContent['landing_r_description'] = "Take a few minutes to reflect on those special moments.";
+    siteContent['landing_r_tip'] = "Invite people who were part of the experience to reflect together.";
 
-    siteTexts['landing_enter'] = 'Hack the matrix';
+    siteContent['landing_enter'] = 'Hack the matrix';
 
-    siteTexts['location_undetected'] = "Your browser didn't communicate your location. Please enable sharing of location with this website.";
-    siteTexts['location_appeal_manually'] = "Type in your address";
-    siteTexts['location_form_current_address'] = "Please type in your current address.";
-    siteTexts['location_form_confirm'] = "That's the place";
+    siteContent['location_undetected'] = "Your browser didn't communicate your location. Please enable sharing of location with this website.";
+    siteContent['location_appeal_manually'] = "Type in your address";
+    siteContent['location_form_current_address'] = "Please type in your current address.";
+    siteContent['location_form_confirm'] = "That's the place";
 
-    siteTexts['gesture_dna'] = "Reflect and entangle in good will gesture DNA";
-    siteTexts['gesture_form_appeal'] = "Have you experienced or done a sustainable gesture during the jam?";
-    siteTexts['gesture_form_tag_values'] = "Tag embodied value(s) leading to sustainable future.";
-    siteTexts['gesture_form_tag_values_input'] = "Type in comma-separated values";
-    siteTexts['gesture_form_circle'] = "Who's in the circle? Give others a chance to reflect";
-    siteTexts['gesture_form_tag_people'] = "Tag people by email";
-    siteTexts['gesture_form_tag_people_input'] = "Type in comma-separated email(s) #nospam (< 256)";
+    siteContent['gesture_dna'] = "Reflect and entangle in good will gesture DNA";
+    siteContent['gesture_form_appeal'] = "Have you experienced or done a sustainable gesture during the jam?";
+    siteContent['gesture_form_tag_values'] = "Tag embodied value(s) leading to sustainable future.";
+    siteContent['gesture_form_tag_values_input'] = "Type in comma-separated values";
+    siteContent['gesture_form_circle'] = "Who's in the circle? Give others a chance to reflect";
+    siteContent['gesture_form_tag_people'] = "Tag people by email";
+    siteContent['gesture_form_tag_people_input'] = "Type in comma-separated email(s) #nospam (< 256)";
 
-    siteTexts['gesture_form_continue'] = "Add more details";
+    siteContent['gesture_form_continue'] = "Add more details";
 
-    siteTexts['gesture_form_entangle'] = "Entangle now";
+    siteContent['gesture_form_entangle'] = "Entangle now";
 
-    siteTexts['refresh'] = "Refresh";
-    siteTexts['cancel'] = "Cancel";
-    siteTexts['show_on_map'] = "Show on map";
-
-    var siteMedia = [];
-    siteMedia['gesture_image'] = "imgs/gesture.png";
+    siteContent['refresh'] = "Refresh";
+    siteContent['cancel'] = "Cancel";
+    siteContent['show_on_map'] = "Show on map";
 
    	</script>
 </head>
@@ -109,8 +110,10 @@
 	<script type="text/javascript">
 
 //User perspective
-    var language = 'en', //site language and default language of data
-        user_languages = []; //user's spoken languages - preference as order
+    var site_language_id = 'en', //site language and default language of data
+        user_languages = []; //user's spoken languages - preference as order;
+    user_languages['en'];
+    attachParamsToUrl('lang[]='+user_language_primary); //transforms into s={site_id} after first call
 
     var auth = 0,
 	    user,
@@ -120,56 +123,64 @@
         location_live = false,
         location_detected = false,
         location_fail = false,
-        map_follow_user = true;
-
-    var map_bound_n = 0,
+        map_follow_user = true,
+        map_zoom_level,
+        map_bound_n = 0,
 	    map_bound_e = 0,
 	    map_bound_s = 0,
 	    map_bound_w = 0;
 
-//API config
-    var api = "http://lepagesta.org/api/main.php",
-        domain = window.location.hostname, site_id, 
-        attach = attachToCalls('domain='+domain); //transforms into s={site_id} after first call
+//Local DB
+    //These can be supplied with call(args) and node(args) !!!
+    var fromLocalStorage = true,    //useful for guests on devices (not to mess with your localDB)
+        toLocalStorage = true;      //and calls that shouldn't be stored
+    db.initateLocalDB();            //more in "js/datalink.js"
 
-    var onChangeBindings = [], //functions are notified after call is run
-        /*[{call}] = array({function} => {params json});*/,
-        bindingsSyncInterval = 20*1000, //default: 20 seconds
+//API config
+    var api = "http://localhost/lepagesta/api/main.php",
+        domain = window.location.hostname, site_id;
+    attachParamsToUrl('domain='+domain); //should transform into s={site_id} after first call
+
+    var onSyncBindings = {}, //data (calls and nodes) in view that are to be synced when a relevant DB call is processed
+        /*[{call_id}] = array('function' => function.this, 'args' => {function(args});*/,
+        bindingsSyncInterval = 20*1000, //default: 20 seconds (onChangeBindings array gets synced)
         storageSyncInterval = 6*60*1000, //default: 6 minutes
-        dataClearWindow = 3*24*3600, //default: 3 days
+        storageSyncPartSize = 6*60*1000, //default: 10 at once, of each: scheduled drafts, posts, calls and data nodes
+        dataClearWindow = 7*24*3600, //default: 7 days
+        synced_time_difference, //api_time - local_time
         synced_api_time, synced_local_time;
 
 //More texts
-	siteTexts['enter_title'] = 'Sign in or register with your email.';
-	siteTexts['enter_title_register'] = 'Register %email%.';
-	siteTexts['enter_title_confirm'] = 'A confirmation email is waiting on %email%.';
-	siteTexts['enter_title_signin'] = 'Sign into %email% with your password.';
-	siteTexts['enter_register_display_heading'] = 'Select your display name.';
-	siteTexts['enter_register_password_heading'] = 'Choose your password.';
-	siteTexts['enter_continue'] = 'Continue';
-	siteTexts['enter_email_input'] = 'Please enter your email.';
-	siteTexts['enter_register_username_input'] = 'Please enter your real name, or a nickname.';
-	siteTexts['enter_continue_register'] = 'Register';
-	siteTexts['enter_continue_signin'] = 'Sign in';
-	siteTexts['enter_continue_confirm'] = 'Confirm';
-	siteTexts['enter_register_password_input'] = 'Please enter your password.';
-	siteTexts['enter_register_confirm_input'] = 'Please confirm your password.';
-	siteTexts['email_input_invalid'] = 'Form of email is invalid.';
-	siteTexts['input_tooshort'] = 'Enter at least {0} characters.';
-	siteTexts['input_password_nomatch'] = 'Passwords do not match.';
-	siteTexts['enter_register_username_available'] = '%username% is available.';
-	siteTexts['enter_register_username_taken'] = '%username% is taken by someone else.';
-	siteTexts['input_tooshort_n'] = 'Enter at least %n% characters.';
-	siteTexts['confirm_send_again'] = 'Send it again';
-	siteTexts['password_incorrect'] = 'Password does not match our records. <a id="resend">Recover lost password</a>';
-	siteTexts['menu_share'] = 'ADD GESTURE';
-	siteTexts['enter_social_login'] = 'Or login with...';
-	siteTexts['menu_profile'] = 'MY PROFILE';
-	siteTexts['header_search'] = 'Search...';
-	siteTexts['menu_help_translate'] = 'HELP TRANSLATE';
-	siteTexts['menu_info'] = 'INFO';
-	siteTexts['profile_title'] = 'Tell us more about yourself.';
-	siteTexts['profile_organization_question'] = 'Do you work with an organization / a collective?';
+	siteContent['enter_title'] = 'Sign in or register with your email.';
+	siteContent['enter_title_register'] = 'Register %email%.';
+	siteContent['enter_title_confirm'] = 'A confirmation email is waiting on %email%.';
+	siteContent['enter_title_signin'] = 'Sign into %email% with your password.';
+	siteContent['enter_register_display_heading'] = 'Select your display name.';
+	siteContent['enter_register_password_heading'] = 'Choose your password.';
+	siteContent['enter_continue'] = 'Continue';
+	siteContent['enter_email_input'] = 'Please enter your email.';
+	siteContent['enter_register_username_input'] = 'Please enter your real name, or a nickname.';
+	siteContent['enter_continue_register'] = 'Register';
+	siteContent['enter_continue_signin'] = 'Sign in';
+	siteContent['enter_continue_confirm'] = 'Confirm';
+	siteContent['enter_register_password_input'] = 'Please enter your password.';
+	siteContent['enter_register_confirm_input'] = 'Please confirm your password.';
+	siteContent['email_input_invalid'] = 'Form of email is invalid.';
+	siteContent['input_tooshort'] = 'Enter at least {0} characters.';
+	siteContent['input_password_nomatch'] = 'Passwords do not match.';
+	siteContent['enter_register_username_available'] = '%username% is available.';
+	siteContent['enter_register_username_taken'] = '%username% is taken by someone else.';
+	siteContent['input_tooshort_n'] = 'Enter at least %n% characters.';
+	siteContent['confirm_send_again'] = 'Send it again';
+	siteContent['password_incorrect'] = 'Password does not match our records. <a id="resend">Recover lost password</a>';
+	siteContent['menu_share'] = 'ADD GESTURE';
+	siteContent['enter_social_login'] = 'Or login with...';
+	siteContent['menu_profile'] = 'MY PROFILE';
+	siteContent['header_search'] = 'Search...';
+	siteContent['menu_help_translate'] = 'HELP TRANSLATE';
+	siteContent['menu_info'] = 'INFO';
+	siteContent['profile_title'] = 'Tell us more about yourself.';
+	siteContent['profile_organization_question'] = 'Do you work with an organization / a collective?';
 
 	</script>
     <script src="js/vendor/client.js"></script>
