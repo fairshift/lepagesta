@@ -13,9 +13,9 @@ Continue reading the following resource to install the current state of this pro
 
 **0.** In short, to install one should have the following applications installed on their OS:
 
-— Node.js
+— [Node.js](https://nodejs.org)
 
-— NPM [Node package manager](npmjs.com)
+— [NPM - Node package manager](https://npmjs.com)
 ... and optionally, Git
 
 
