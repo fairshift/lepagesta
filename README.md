@@ -16,6 +16,7 @@ Continue reading the following resource to install the current state of this pro
 — [Node.js](https://nodejs.org)
 
 — [NPM - Node package manager](https://npmjs.com)
+
 ... and optionally, Git
 
 
