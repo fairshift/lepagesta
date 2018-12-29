@@ -1,7 +1,7 @@
 import parser from './parser'
-import {parserList} from './parserList'
+import { parserList } from './parserList'
 
-import {fileExists, getDirs, getDirectories} from './util'
+import { initParserKeywords_byCategory, fileExists, getDirs, getDirectories } from './util'
 
 import _ from 'lodash'
 
@@ -9,47 +9,88 @@ import _ from 'lodash'
 const dataRoot = './datasets'
 
 
-const exposeParsables = () => {
+const exposeParsables = (args = {}) => {
 
-  var keywords = _.map(parserList, function(category, item){ 
-    return _.map(item, function(parser){
+/* Input params
+ — args: {
+    categories: ['categoryName1', 'categoryName2', ...],
+    parsers: {
+      'categoryName1': ['parserName1', 'parserName2', ...]
+    }
+   }
+*/
 
-      var obj = {};
-      var parserModule = category+' '+parserName;
-      var invokeKeywords = '';
+  var retrieveKeywords = {}; // Function output
 
-      try {
-        invokeKeywords = require(parserModule)(invokeKeywords)
-        obj[category+' '+parser] = require('./receipts-blablaz').parserMappings
-        return obj
+  // Loop and return categories and parsers 
+  forEach(parserList, function(parserList_category){
 
-      } catch (ex) {
-        invokeKeywords = '';
+    // Specified category
+    var thisCategoryIsIn = false;
+    if( typeof args.categories !== 'undefined' ){
+      if( parserList_category in args.categories ){
+
+        retrieveKeywords[ parserList_category ].push( initParserKeywords_byCategory(parserList_category) );
+        thisCategoryIsIn = true;
       }
+    }
 
-    });
-  });
+    // Specified parsers
+    if( thisCategoryIsIn == false && typeof args.parsers !== 'undefined' ){
+
+      var match = _.intersection(parserList_category, args.parsers[parserList_category]);
+      if( !_.isEmpty(match) == true ){
+
+        retrieveKeywords[ parserList_category ].push( initParserKeywords_byCategory(parserList_category, match) );
+      }
+    }
+
+    if( typeof args.categories === 'undefined' && typeof args.parsers === 'undefined' ){
+
+      forEach(parserList_category, function(categoryName, parsers){
+        retrieveKeywords[ parserList_category ].push( initParserKeywords_byCategory(parserList_category) );
+      });
+    }
+  }
+
+  return retrieveKeywords;
 }
+// Search loops scenario in this function (efficiency being main concern)
+// Better to use native JavaScript forEach function than lodash's _.map or _.merge, which are not aware of steps taken priorly
+/*
+
+Function "exposeParsables": loops through parserList array (count: ¹n)
+  * ( = multiply by nested array items listed below)
+        Loop through categories array (count: ²n), find match among both keys (steps: ²n * ¹n)
+        Loop through parsers array (count: ³n)
+        * Loop through each parser module name value in array (count: ⁴n) to find a match (steps: ³n * ¹n * ⁴n)
+
+Test maths: {'¹n': 3, '²n': 4, '³n': 5, '⁴n': 6} ‹ [²n, ³n, ⁴n]: average counts of items in arrays
+12 + 90 = 102 steps
+
+*/
 
 
-const argsDefault = {
+
+const parserArgs_schema = {
   caption: '',
   text: '',
   diff = ''
 }
-const parserProcessText = (parserName, args = argsDefault) => {
+
+const parserProcessText = (categoryName, parserName, args = parserArgs_schema) => {
 
   var n = parserName.split('-');
 
-  if(parserList[n[0]].indexOf(n[1]) > -1){
-
-    return parser( parserName, args );
+  if( typeof parserList[ categoryName ] !== 'undefined' ){
+    if( typeof parserList[ categorName ][ parserName ] !== 'undefined' )
+      return parser( categoryName, parserName, args );
   }
 
   return false
 }
 
-const parserProcessFile = (parser, pathToFile) => {
+const parserProcessFile = (parserName, pathToFile) => {
 
   /*if(fileExists(pathToFile)){
     fs.readFile(pathToFile, 'utf8', readData);
@@ -59,7 +100,7 @@ const parserProcessFile = (parser, pathToFile) => {
   return true
 }
 
-const parserProcessFolder = (parser, pathToFolder) => {
+const parserProcessFolder = (parserName, pathToFolder) => {
 
   /*if(typeof args.pathToFolder !== 'undefined'){
     args.

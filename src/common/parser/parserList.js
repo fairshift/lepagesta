@@ -1,4 +1,5 @@
 
 export const parserList = {
-	receipts: ['blablaz']
+	receipts: ['receipt-files-folders'],
+	measuring_time: ['working-hours-online-offline']
 }

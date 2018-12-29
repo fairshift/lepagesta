@@ -1,0 +1,42 @@
+# Taskii suddenly stopped working in week of 17.-23.12.
+# This file has been uploaded to github.com/fairshift/lepagesta, 29.12.2018
+
+
+# Local work log substitute:
+
+react-boilerplate dev: antd, isomorphic-fetch
+	Implementing: Side menu layout & text area (antd; redux)
+		15h 17.-23.12.2018: Autosave components
+
+	Implementing: SignIn/InMenu component is replaced by direct link to SignIn form when screen size is smaller than 767px
+		12:30 ~ 13:30 23.*
+
+text2json parser component
+	Creating learning dataset
+		5h 17.12.2018
+		[facebook.com/blablaz]
+
+	Implementing: Schema
+		10h 17.-23.12.2018
+		[facebook.com/blablaz]
+
+	Implementing: Regex
+		5h 17.-23.12.2018
+		[facebook.com/blablaz]
+
+	Parsing process code: fluent-indexeddb-db install; exposeParables & retrieveKeywords functions
+		7:33 2.5h ~14:00 28.'
+
+	Code refactoring
+		~00:00 1h 15min 29.'
+
+Layout
+	Background image styling (futuristic_redmesh2 from stockarch.com)
+		2h ~23:50 28.12.'18
+		[facebook.com/blablaz/posts/10155698403156121]
+
+
+
+# Part of subsequent lack of data is offset by
+# an online work log data tags as campaign:
+# facebook.com/blablaz/posts/10155657020516121 (protocol and starting point)

@@ -140,7 +140,9 @@ export class ParserView extends React.Component {
       </div>
     );
 
-    dispatch(screenResized(window.innerWidth));
+    if(typeof window !== 'undefined'){ 
+      dispatch(screenResized(window.innerWidth));
+    }
 
     let buttonSize;
     if(typeof screenWidth !== 'undefined'){
@@ -155,9 +157,11 @@ export class ParserView extends React.Component {
       buttonSize = 'default'
     }
 
+    /*
     console.log(typeof window);
     console.log(screenWidth);
     console.log(buttonSize);
+    */
 
     const SideMenu = (
       <div>

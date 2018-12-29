@@ -1,4 +1,6 @@
-/* Razzle.config.js - extending Webpack
+/* 
+// Razzle.config.js — extending Webpack with "@loadable" package (only as example, as this boilerplate uses "react-loadable")
+
 const LoadablePlugin = require('@loadable/webpack-plugin')
 
 module.exports = {
@@ -15,11 +17,19 @@ module.exports = {
 
     return config;
   },
-}; */
+};
 
-/* Web worker loader - github.com/webpack-contrib/worker-loader
+*/
 
-// Webpack config
+
+
+/* 
+// Web worker loader configuration for github.com/webpack-contrib/worker-loader
+
+
+//
+// Webpack config code (use the above example as a guide to implementation)
+//
 module: [
   rules: [
     {
@@ -29,9 +39,10 @@ module: [
   ]
 ],
 
-
+//
 // App.js
-import Worker from './file.worker.js';
+//
+import Worker from './worker.js';
 
 const worker = new Worker();
 

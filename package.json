@@ -26,6 +26,7 @@
     "es6-promise": "^4.2.5",
     "express": "^4.15.2",
     "fb": "^2.0.0",
+    "fluent-indexed-db": "^1.1.1",
     "get-uri": "^2.0.2",
     "graphql": "^14.0.2",
     "graphql-tag": "^2.10.0",
