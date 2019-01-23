@@ -1,0 +1,17 @@
+
+react-boilerplate
+
+	Preparing event page
+		17:30 ~ 19:30 21.1.*: Exporting graphics from Leap gesture template file (SVG, PNG); Resolving compatibility (browsing web)
+		19:30 - 20:30 *: Bringing in Matrix JS animation
+		21:30 - 22:15 *: *
+		12:45 - 13:15 22.*: * — to revisit, div container doesn't preserve className
+		13:15 - 14:20: SVG scaling - to revisit; Leaf component - placement of curved texts along paths
+		15:40 - 16:40: Leaf component code structure and references
+		17:10 - 17:15: Resources on how to scale svg texts are put in coments
+		18:00 - 20:25: Futuristi meetup
+
+Layout
+	Background image styling (futuristic_redmesh2 from stockarch.com)
+		2h ~23:50 28.12.'18
+		[facebook.com/blablaz/posts/10155698403156121]

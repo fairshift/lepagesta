@@ -237,6 +237,12 @@ injectGlobal`
   }
   
 
+  // Matrix container
+  div.matrixContainer,
+  div.matrixContainer canvas {
+    width: 100%;
+    height: 100%
+  }
 
 
 

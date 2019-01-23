@@ -17,6 +17,8 @@ import Features from './containers/FeatureTree'
 import ParserPage from './views/Parser'
 import SignIn from './views/SignIn'
 
+import PlaceLeaf from './views/Place'
+
 // Async pages (not readily available in offline-first mode)
 import BoilerplateHome from './views/BoilerplatePage/Loadable' // "react-boilerplate" project page
 
@@ -34,6 +36,7 @@ const Root = () => (
       <Features path='/' />
       <ParserPage path='/parser' />
       <BoilerplateHome path='/boilerplate' />
+      <PlaceLeaf path="/place" />
     </App>
   </Router>
 )

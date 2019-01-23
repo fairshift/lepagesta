@@ -6,6 +6,16 @@
 import { defineMessages } from 'react-intl';
 
 export default defineMessages({
+  licenseMessage: {
+    id: 'boilerplate.components.Footer.license.message',
+    defaultMessage: 'This project is licensed under the MIT license.',
+  },
+  authorMessage: {
+    id: 'boilerplate.components.Footer.author.message',
+    defaultMessage: `
+      Made with love by {author}.
+    `,
+  },
   startProjectHeader: {
     id: 'boilerplate.containers.HomePage.start_project.header',
     defaultMessage: 'Start your next react project in seconds',
@@ -27,7 +37,6 @@ export default defineMessages({
     id: 'boilerplate.containers.HomePage.tryme.atPrefix',
     defaultMessage: '@',
   },
-
   header: {
     id: 'boilerplate.containers.FeaturePage.header',
     defaultMessage: 'Features',
