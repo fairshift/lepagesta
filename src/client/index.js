@@ -1,28 +1,42 @@
+
+// Layout components
 import React from "react"
 import ReactDOM from "react-dom"
 import { Provider } from "react-redux"
-import LanguageProvider from "../common/containers/LanguageProvider"
-import { translationMessages } from "../common/i18n"
 
+
+// Application state (centralized data store) — managing components
 import configureStore from "../common/configureStore"
 import { createReduxHistoryContext, reachify } from "redux-first-history"
 import createReducer from '../common/reducers'
-import createHistory from "history/createMemoryHistory"
 import { addMiddleware } from 'redux-dynamic-middlewares'
 import { compose } from 'redux'
 
-import Root from "../common/app"
+// Application state (centralized data store) — modifying components
+import createHistory from "history/createMemoryHistory"
+import { screenResized } from '../common/containers/App/actions'
 
-// Data sources
+
+// Data sources — database link with backend GraphQL server
 import ApolloClient from 'apollo-client';
 import { ApolloLink } from 'apollo-link';
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import { links } from './graphqlApollo'
 import { ApolloProvider } from 'react-apollo'
 
-import { db, databaseContext } from './dbLocalStorage' // in-browser
+// Data sources — local database (client-side or in Node.js)
+import { db, databaseContext } from './dbLocalStorage'
 
-import { screenResized } from '../common/containers/App/actions'
+
+// Internationalization & messages providers
+import LanguageProvider from "../common/containers/LanguageProvider"
+import { translationMessages } from "../common/i18n"
+
+
+// Main application wrapper (using the above components)
+import Root from "../common/app"
+
+
 
 // require('codemirror/lib/codemirror.css');
 
