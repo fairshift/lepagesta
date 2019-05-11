@@ -36,6 +36,9 @@ import { translationMessages } from "../common/i18n"
 // Main application wrapper (using the above components)
 import Root from "../common/app"
 
+import { Both } from '../testing'
+Both()
+
 
 
 // require('codemirror/lib/codemirror.css');
